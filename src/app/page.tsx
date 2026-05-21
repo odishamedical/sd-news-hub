@@ -58,8 +58,8 @@ export default function Home() {
             
             {/* Hero Article */}
             <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 flex flex-col md:flex-row group cursor-pointer">
-              <div className="w-full md:w-[60%] h-64 md:h-80 relative overflow-hidden">
-                <img src="https://images.unsplash.com/photo-1541888081622-1db36e7655ce?q=80&w=600&auto=format&fit=crop" alt="Earthquake" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <div className="w-full md:w-[60%] h-64 md:h-80 relative overflow-hidden bg-[#0B2B26]">
+                <img src="/news_earthquake.png" alt="Earthquake" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               </div>
               <div className="w-full md:w-[40%] bg-[#0B2B26] p-8 flex flex-col justify-center text-white relative">
                 {/* Diagonal cut illusion */}
@@ -75,8 +75,8 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               
               <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 cursor-pointer group flex flex-col">
-                <div className="h-40 relative overflow-hidden">
-                  <img src="https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=400&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="News" />
+                <div className="h-40 relative overflow-hidden bg-[#0B2B26]">
+                  <img src="/news_industry.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="News" />
                 </div>
                 <div className="p-4 flex-1 flex flex-col justify-between">
                   <div>
@@ -90,8 +90,8 @@ export default function Home() {
               </div>
 
               <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 cursor-pointer group flex flex-col">
-                <div className="h-40 relative overflow-hidden">
-                  <img src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=400&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="News" />
+                <div className="h-40 relative overflow-hidden bg-[#0B2B26]">
+                  <img src="/news_football.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="News" />
                 </div>
                 <div className="p-4 flex-1 flex flex-col justify-between">
                   <div>
@@ -105,8 +105,8 @@ export default function Home() {
               </div>
 
               <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 cursor-pointer group flex flex-col">
-                <div className="h-40 relative overflow-hidden">
-                  <img src="https://images.unsplash.com/photo-1473496169904-658ba7c44d8a?q=80&w=400&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="News" />
+                <div className="h-40 relative overflow-hidden bg-[#0B2B26]">
+                  <img src="/news_climate.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="News" />
                 </div>
                 <div className="p-4 flex-1 flex flex-col justify-between">
                   <div>
@@ -163,8 +163,8 @@ export default function Home() {
                     <p className="text-xs text-[#C5A059] font-bold mb-1 uppercase tracking-wider">Bhubaneswar</p>
                     <h4 className="font-bold text-sm leading-snug group-hover:text-gray-300">City Celebrates Grand Rath Yatra Preparations</h4>
                   </div>
-                  <div className="w-20 h-16 rounded overflow-hidden shrink-0">
-                    <img src="https://images.unsplash.com/photo-1542385262-cdf06b528a7e?q=80&w=200&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="Rath Yatra" />
+                  <div className="w-20 h-16 rounded overflow-hidden shrink-0 bg-[#051815]">
+                    <img src="/news_rathyatra.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="Rath Yatra" />
                   </div>
                 </div>
 
@@ -173,8 +173,8 @@ export default function Home() {
                     <p className="text-xs text-[#C5A059] font-bold mb-1 uppercase tracking-wider">Cuttack</p>
                     <h4 className="font-bold text-sm leading-snug group-hover:text-gray-300">Monsoon Floods Cause Havoc in the District Areas</h4>
                   </div>
-                  <div className="w-20 h-16 rounded overflow-hidden shrink-0">
-                    <img src="https://images.unsplash.com/photo-1520697330740-4d3de7a5e0bc?q=80&w=200&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="Floods" />
+                  <div className="w-20 h-16 rounded overflow-hidden shrink-0 bg-[#051815]">
+                    <img src="/news_floods.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="Floods" />
                   </div>
                 </div>
 
@@ -183,8 +183,8 @@ export default function Home() {
                     <p className="text-xs text-[#C5A059] font-bold mb-1 uppercase tracking-wider">Puri</p>
                     <h4 className="font-bold text-sm leading-snug group-hover:text-gray-300">Annual Beach Festival Draws Thousands of Tourists</h4>
                   </div>
-                  <div className="w-20 h-16 rounded overflow-hidden shrink-0">
-                    <img src="https://images.unsplash.com/photo-1582269417855-6b5d985db5db?q=80&w=200&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="Puri" />
+                  <div className="w-20 h-16 rounded overflow-hidden shrink-0 bg-[#051815]">
+                    <img src="/news_puri.png" className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="Puri" />
                   </div>
                 </div>
 
