@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { getAggregateNews, NewsItem } from "@/lib/news";
+import { getAggregateNews, getCustomNews, NewsItem } from "@/lib/news";
 
 // Helper component for displaying a news card
 function NewsCard({ item, featured = false }: { item: NewsItem; featured?: boolean }) {
@@ -80,14 +80,21 @@ function NewsGridSection({ title, items }: { title: string; items: NewsItem[] })
 export default async function Home({ searchParams }: { searchParams: { lang?: string } }) {
   const lang = searchParams.lang === 'or' ? 'or' : 'en';
   const news = await getAggregateNews(lang);
+  const customNews = await getCustomNews();
 
-  const breaking = news.breaking || [];
-  const odisha = news.odisha || [];
-  const politics = news.politics || [];
-  const business = news.business || [];
-  const tech = news.tech || [];
-  const health = news.health || [];
-  const gold = news.gold || [];
+  // Helper to merge custom news into rss categories
+  const mergeNews = (rssItems: NewsItem[] = [], categoryKey: string) => {
+    const customItems = customNews.filter(n => n.category === categoryKey);
+    return [...customItems, ...rssItems];
+  };
+
+  const breaking = mergeNews(news.breaking, "breaking");
+  const odisha = mergeNews(news.odisha, "odisha");
+  const politics = mergeNews(news.politics, "politics");
+  const business = mergeNews(news.business, "business");
+  const tech = mergeNews(news.tech, "tech");
+  const health = mergeNews(news.health, "health");
+  const gold = mergeNews(news.gold, "gold");
   
   // District news for sidebar
   const bhubaneswar = news.bhubaneswar?.[0];

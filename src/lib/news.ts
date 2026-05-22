@@ -1,5 +1,6 @@
 import Parser from "rss-parser";
 import { unstable_cache } from "next/cache";
+import { db, collection, getDocs, query, orderBy } from "./firebase";
 
 const parser = new Parser({
   customFields: {
@@ -120,3 +121,28 @@ export const getAggregateNews = unstable_cache(
   ["aggregate-news-feeds"],
   { revalidate: 300 } // Revalidate every 5 minutes (300 seconds)
 );
+
+/**
+ * Fetches custom submitted articles from Firebase Firestore
+ */
+export async function getCustomNews(): Promise<NewsItem[]> {
+  try {
+    const q = query(collection(db, "news_articles"), orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        title: data.title,
+        link: data.url,
+        pubDate: data.pubDate || new Date().toUTCString(),
+        source: data.source,
+        imageUrl: data.image || null,
+        category: data.category
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching custom news from Firebase:", error);
+    return [];
+  }
+}
