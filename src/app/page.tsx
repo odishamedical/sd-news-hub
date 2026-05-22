@@ -134,7 +134,11 @@ export default async function Home({ searchParams }: { searchParams: { lang?: st
             
             {/* Auth Links */}
             <Link href="https://sd-auth-center.vercel.app" className="hover:text-[#C5A059] transition-colors hidden sm:block">Login</Link>
-            <Link href="https://sd-auth-center.vercel.app" className="bg-[#C5A059] text-[#0A1C16] hover:bg-[#b08d4b] px-3 py-1.5 rounded transition-colors">Register</Link>
+            <Link href="https://sd-auth-center.vercel.app" className="bg-[#C5A059] text-[#0A1C16] hover:bg-[#b08d4b] px-3 py-1.5 rounded transition-colors hidden sm:block">Register</Link>
+            
+            <Link href="/register-reporter" className="border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-[#0A1C16] px-3 py-1.5 rounded transition-colors">
+              {lang === 'or' ? 'ଯୋଗଦାନ କରନ୍ତୁ' : 'Contribute News'}
+            </Link>
           </div>
         </div>
       </header>
