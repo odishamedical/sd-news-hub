@@ -77,8 +77,9 @@ function NewsGridSection({ title, items }: { title: string; items: NewsItem[] })
   );
 }
 
-export default async function Home() {
-  const news = await getAggregateNews();
+export default async function Home({ searchParams }: { searchParams: { lang?: string } }) {
+  const lang = searchParams.lang === 'or' ? 'or' : 'en';
+  const news = await getAggregateNews(lang);
 
   const breaking = news.breaking || [];
   const odisha = news.odisha || [];
@@ -110,20 +111,40 @@ export default async function Home() {
           </div>
           
           <nav className="hidden md:flex gap-8 text-sm font-semibold">
-            <Link href="/" className="text-[#C5A059] border-b-2 border-[#C5A059] pb-5 translate-y-2.5">Home</Link>
-            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Odisha</Link>
-            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Politics</Link>
-            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Business</Link>
+            <Link href="/" className="text-[#C5A059] border-b-2 border-[#C5A059] pb-5 translate-y-2.5">
+              {lang === 'or' ? 'ମୁଖ୍ୟ ପୃଷ୍ଠା' : 'Home'}
+            </Link>
+            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">
+              {lang === 'or' ? 'ଓଡ଼ିଶା' : 'Odisha'}
+            </Link>
+            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">
+              {lang === 'or' ? 'ରାଜନୀତି' : 'Politics'}
+            </Link>
+            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">
+              {lang === 'or' ? 'ବ୍ୟବସାୟ' : 'Business'}
+            </Link>
           </nav>
+          
+          <div className="flex items-center gap-4 text-xs font-semibold">
+            {/* Language Switcher */}
+            <div className="flex border border-[#1a3d35] rounded overflow-hidden">
+              <Link href="/?lang=en" className={`px-2 py-1 ${lang === 'en' ? 'bg-[#C5A059] text-[#0A1C16]' : 'text-gray-400 hover:text-white transition-colors'}`}>EN</Link>
+              <Link href="/?lang=or" className={`px-2 py-1 ${lang === 'or' ? 'bg-[#C5A059] text-[#0A1C16]' : 'text-gray-400 hover:text-white transition-colors'}`}>ଓଡ଼ିଆ</Link>
+            </div>
+            
+            {/* Auth Links */}
+            <Link href="https://sd-auth-center.vercel.app" className="hover:text-[#C5A059] transition-colors hidden sm:block">Login</Link>
+            <Link href="https://sd-auth-center.vercel.app" className="bg-[#C5A059] text-[#0A1C16] hover:bg-[#b08d4b] px-3 py-1.5 rounded transition-colors">Register</Link>
+          </div>
         </div>
       </header>
 
       {/* Breaking News Ticker */}
       <div className="bg-[#051815] border-t border-[#1a3d35] text-white text-sm flex items-center overflow-hidden">
         <div className="bg-[#E63946] font-bold px-4 py-2 flex items-center gap-2 z-10 shrink-0 uppercase tracking-wider">
-          <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span> LIVE
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span> {lang === 'or' ? 'ଲାଇଭ୍' : 'LIVE'}
         </div>
-        <div className="font-bold text-[#C5A059] px-4 py-2 shrink-0">Latest Updates:</div>
+        <div className="font-bold text-[#C5A059] px-4 py-2 shrink-0">{lang === 'or' ? 'ସର୍ବଶେଷ ଅପଡେଟ୍:' : 'Latest Updates:'}</div>
         <div className="flex-1 overflow-hidden whitespace-nowrap relative">
           <div className="animate-[marquee_30s_linear_infinite] inline-block hover:pause">
             {breaking.map((n, i) => (
@@ -142,7 +163,7 @@ export default async function Home() {
           
           {/* Main Content (Left 2/3) */}
           <div className="lg:col-span-9 flex flex-col gap-6">
-            <h2 className="text-2xl font-serif font-bold border-b border-gray-300 pb-2 text-[#0B2B26]">India Top Stories</h2>
+            <h2 className="text-2xl font-serif font-bold border-b border-gray-300 pb-2 text-[#0B2B26]">{lang === 'or' ? 'ଭାରତର ମୁଖ୍ୟ ଖବର' : 'India Top Stories'}</h2>
             
             {/* Hero Article */}
             {topHero && (
@@ -190,14 +211,14 @@ export default async function Home() {
         </div>
 
         {/* Categorized Grid Sections */}
-        <NewsGridSection title="Odisha State News" items={odisha.slice(0, 4)} />
-        <NewsGridSection title="Politics & Government" items={politics} />
-        <NewsGridSection title="Business & Economy" items={business} />
+        <NewsGridSection title={lang === 'or' ? 'ଓଡ଼ିଶା ଖବର' : 'Odisha State News'} items={odisha.slice(0, 4)} />
+        <NewsGridSection title={lang === 'or' ? 'ରାଜନୀତି' : 'Politics & Government'} items={politics} />
+        <NewsGridSection title={lang === 'or' ? 'ବ୍ୟବସାୟ' : 'Business & Economy'} items={business} />
         
         {/* Two Column Grid for specific niches */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
           <div>
-            <h2 className="text-xl font-serif font-bold border-b border-gray-300 pb-2 mb-4 text-[#0B2B26]">Technology</h2>
+            <h2 className="text-xl font-serif font-bold border-b border-gray-300 pb-2 mb-4 text-[#0B2B26]">{lang === 'or' ? 'ଟେକ୍ନୋଲୋଜି' : 'Technology'}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {tech.map(item => (
                 <NewsCard key={item.id} item={item} />
@@ -205,7 +226,7 @@ export default async function Home() {
             </div>
           </div>
           <div>
-            <h2 className="text-xl font-serif font-bold border-b border-gray-300 pb-2 mb-4 text-[#0B2B26]">Healthcare & Medical</h2>
+            <h2 className="text-xl font-serif font-bold border-b border-gray-300 pb-2 mb-4 text-[#0B2B26]">{lang === 'or' ? 'ସ୍ୱାସ୍ଥ୍ୟ ଏବଂ ମେଡିକାଲ' : 'Healthcare & Medical'}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {health.map(item => (
                 <NewsCard key={item.id} item={item} />

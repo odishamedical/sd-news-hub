@@ -50,10 +50,11 @@ function getDeterministicImage(id: string): string {
 /**
  * Fetches an RSS feed from Google News for a given search query.
  */
-export async function fetchNewsByQuery(query: string, limit: number = 5): Promise<NewsItem[]> {
+export async function fetchNewsByQuery(query: string, limit: number = 5, lang: string = 'en'): Promise<NewsItem[]> {
   try {
     const encodedQuery = encodeURIComponent(query);
-    const feedUrl = `https://news.google.com/rss/search?q=${encodedQuery}&hl=en-IN&gl=IN&ceid=IN:en`;
+    const langParams = lang === 'or' ? 'hl=or&gl=IN&ceid=IN:or' : 'hl=en-IN&gl=IN&ceid=IN:en';
+    const feedUrl = `https://news.google.com/rss/search?q=${encodedQuery}&${langParams}`;
     
     // We bypass node fetch caching to rely on Next.js native unstable_cache
     const feed = await parser.parseURL(feedUrl);
@@ -91,16 +92,16 @@ export async function fetchNewsByQuery(query: string, limit: number = 5): Promis
  * This ensures fast page loads while keeping news reasonably fresh.
  */
 export const getAggregateNews = unstable_cache(
-  async () => {
+  async (lang: 'en' | 'or' = 'en') => {
     // We will fetch these categories in parallel
     const queries = [
-      { key: "breaking", q: "India News", limit: 5 },
+      { key: "breaking", q: lang === 'or' ? "ଓଡ଼ିଶା ଖବର" : "India News", limit: 5 },
       { key: "odisha", q: "Odisha", limit: 6 },
-      { key: "politics", q: "India Politics", limit: 4 },
-      { key: "business", q: "India Business", limit: 4 },
-      { key: "tech", q: "Technology India", limit: 4 },
-      { key: "health", q: "Health Medical News India", limit: 4 },
-      { key: "gold", q: "Gold Price Jewelry News India", limit: 4 },
+      { key: "politics", q: lang === 'or' ? "ରାଜନୀତି" : "India Politics", limit: 4 },
+      { key: "business", q: lang === 'or' ? "ବ୍ୟବସାୟ" : "India Business", limit: 4 },
+      { key: "tech", q: lang === 'or' ? "ଟେକ୍ନୋଲୋଜି" : "Technology India", limit: 4 },
+      { key: "health", q: lang === 'or' ? "ସ୍ୱାସ୍ଥ୍ୟ" : "Health Medical News India", limit: 4 },
+      { key: "gold", q: lang === 'or' ? "ସୁନା ଦର" : "Gold Price Jewelry News India", limit: 4 },
       { key: "bhubaneswar", q: "Bhubaneswar", limit: 3 },
       { key: "cuttack", q: "Cuttack", limit: 3 },
       { key: "sambalpur", q: "Sambalpur", limit: 3 }
@@ -110,7 +111,7 @@ export const getAggregateNews = unstable_cache(
 
     await Promise.all(
       queries.map(async (query) => {
-        results[query.key] = await fetchNewsByQuery(query.q, query.limit);
+        results[query.key] = await fetchNewsByQuery(query.q, query.limit, lang);
       })
     );
 

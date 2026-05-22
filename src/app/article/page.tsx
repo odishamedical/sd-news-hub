@@ -1,6 +1,8 @@
 import React from "react";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default function ArticlePage({ searchParams }: { searchParams: { url?: string, title?: string, source?: string } }) {
   const articleUrl = searchParams.url || "#";
   const title = searchParams.title || "Article";
