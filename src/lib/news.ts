@@ -35,6 +35,19 @@ function extractImageFromHtml(html?: string): string | undefined {
 }
 
 /**
+ * Generates a deterministic distinct image for an article.
+ */
+function getDeterministicImage(id: string): string {
+  // Use a simple hash of the ID to get a consistent seed
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const seed = Math.abs(hash);
+  return `https://picsum.photos/seed/${seed}/800/500`;
+}
+
+/**
  * Fetches an RSS feed from Google News for a given search query.
  */
 export async function fetchNewsByQuery(query: string, limit: number = 5): Promise<NewsItem[]> {
@@ -52,13 +65,19 @@ export async function fetchNewsByQuery(query: string, limit: number = 5): Promis
       const title = lastDash > -1 ? rawTitle.substring(0, lastDash) : rawTitle;
       const source = lastDash > -1 ? rawTitle.substring(lastDash + 3) : "Unknown Source";
 
+      const id = item.guid || `${query}-${index}`;
+      let imageUrl = extractImageFromHtml(item.description || item.content);
+      if (!imageUrl) {
+        imageUrl = getDeterministicImage(id);
+      }
+
       return {
-        id: item.guid || `${query}-${index}`,
+        id,
         title,
         link: item.link || "#",
         pubDate: item.pubDate || new Date().toISOString(),
         source,
-        imageUrl: extractImageFromHtml(item.description || item.content)
+        imageUrl
       };
     });
   } catch (error) {

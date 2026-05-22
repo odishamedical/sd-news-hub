@@ -7,9 +7,11 @@ function NewsCard({ item, featured = false }: { item: NewsItem; featured?: boole
   const fallbackImage = "/news_industry.png";
   const image = item.imageUrl || fallbackImage;
 
+  const readerUrl = `/article?url=${encodeURIComponent(item.link)}&title=${encodeURIComponent(item.title)}&source=${encodeURIComponent(item.source)}`;
+
   if (featured) {
     return (
-      <a href={item.link} target="_blank" rel="noopener noreferrer" className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 flex flex-col md:flex-row group cursor-pointer block h-full">
+      <Link href={readerUrl} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 flex flex-col md:flex-row group cursor-pointer block h-full">
         <div className="w-full md:w-[60%] h-64 md:h-[400px] relative overflow-hidden bg-[#0B2B26]">
           <img src={image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
         </div>
@@ -20,12 +22,12 @@ function NewsCard({ item, featured = false }: { item: NewsItem; featured?: boole
           <p className="text-gray-300 mb-6 relative z-10 text-sm opacity-80">Published: {new Date(item.pubDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
           <span className="bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A1C16] font-bold px-6 py-3 rounded self-start transition-colors relative z-10">Read Article</span>
         </div>
-      </a>
+      </Link>
     );
   }
 
   return (
-    <a href={item.link} target="_blank" rel="noopener noreferrer" className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 cursor-pointer group flex flex-col h-full">
+    <Link href={readerUrl} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 cursor-pointer group flex flex-col h-full">
       <div className="h-40 relative overflow-hidden bg-[#0B2B26]">
         <img src={image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.title} />
       </div>
@@ -39,15 +41,16 @@ function NewsCard({ item, featured = false }: { item: NewsItem; featured?: boole
           <span className="text-[#C5A059]">↗ Read</span>
         </div>
       </div>
-    </a>
+    </Link>
   );
 }
 
 // Helper component for small list items (Sidebar)
 function NewsListItem({ item, category }: { item: NewsItem; category: string }) {
   const fallbackImage = "/news_puri.png";
+  const readerUrl = `/article?url=${encodeURIComponent(item.link)}&title=${encodeURIComponent(item.title)}&source=${encodeURIComponent(item.source)}`;
   return (
-    <a href={item.link} target="_blank" rel="noopener noreferrer" className="flex gap-4 group cursor-pointer border-b border-[#1a3d35] border-opacity-30 pb-4">
+    <Link href={readerUrl} className="flex gap-4 group cursor-pointer border-b border-[#1a3d35] border-opacity-30 pb-4">
       <div className="flex-1">
         <p className="text-[10px] text-[#C5A059] font-bold mb-1 uppercase tracking-wider">{category}</p>
         <h4 className="font-bold text-xs leading-snug group-hover:text-gray-600 line-clamp-3">{item.title}</h4>
@@ -55,7 +58,7 @@ function NewsListItem({ item, category }: { item: NewsItem; category: string }) 
       <div className="w-20 h-16 rounded overflow-hidden shrink-0 bg-[#051815]">
         <img src={item.imageUrl || fallbackImage} className="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="News" />
       </div>
-    </a>
+    </Link>
   );
 }
 
@@ -220,8 +223,10 @@ export default async function Home() {
               <Link href="https://shyamdash.com" className="text-xs font-bold text-sky-400 hover:underline">Trade on SD Gold Hub →</Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {gold.map(item => (
-                <a key={item.id} href={item.link} target="_blank" rel="noopener noreferrer" className="bg-[#0A1021] rounded-xl overflow-hidden border border-[#2A344A] hover:border-[#C5A059] transition-colors group">
+              {gold.map(item => {
+                const readerUrl = `/article?url=${encodeURIComponent(item.link)}&title=${encodeURIComponent(item.title)}&source=${encodeURIComponent(item.source)}`;
+                return (
+                <Link key={item.id} href={readerUrl} className="bg-[#0A1021] rounded-xl overflow-hidden border border-[#2A344A] hover:border-[#C5A059] transition-colors group">
                   <div className="h-32 bg-[#1A233A] relative">
                     {item.imageUrl && <img src={item.imageUrl} className="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition-opacity" alt="Gold" />}
                   </div>
@@ -229,8 +234,8 @@ export default async function Home() {
                     <span className="text-[9px] font-bold text-[#C5A059] uppercase">{item.source}</span>
                     <h4 className="text-xs font-bold mt-1 text-slate-200 group-hover:text-white line-clamp-3">{item.title}</h4>
                   </div>
-                </a>
-              ))}
+                </Link>
+              )})}
             </div>
           </div>
         </div>
