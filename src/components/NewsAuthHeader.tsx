@@ -65,9 +65,9 @@ export default function NewsAuthHeader({ lang }: { lang: string }) {
   };
 
   return (
-    <div className="flex items-center gap-4 text-xs font-semibold">
+    <div className="flex items-center gap-2 sm:gap-4 text-xs font-semibold shrink-0">
       {/* Language Switcher */}
-      <div className="flex border border-[#1a3d35] rounded overflow-hidden">
+      <div className="flex border border-[#1a3d35] rounded overflow-hidden text-[10px] sm:text-xs">
         <button onClick={(e) => handleLangChange(e, 'en')} className={`px-2 py-1 ${lang === 'en' ? 'bg-[#C5A059] text-[#0A1C16]' : 'text-gray-400 hover:text-white transition-colors'}`}>EN</button>
         <button onClick={(e) => handleLangChange(e, 'or')} className={`px-2 py-1 ${lang === 'or' ? 'bg-[#C5A059] text-[#0A1C16]' : 'text-gray-400 hover:text-white transition-colors'}`}>ଓଡ଼ିଆ</button>
       </div>
@@ -91,12 +91,14 @@ export default function NewsAuthHeader({ lang }: { lang: string }) {
       )}
       
       {userEmail ? (
-        <Link href="/dashboard" className="border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-[#0A1C16] px-3 py-1.5 rounded transition-colors">
-          {lang === 'or' ? 'ଡ୍ୟାସବୋର୍ଡ' : 'Dashboard'}
+        <Link href="/dashboard" className="border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-[#0A1C16] px-2 sm:px-3 py-1 sm:py-1.5 rounded transition-colors text-[10px] sm:text-xs">
+          <span className="hidden sm:inline">{lang === 'or' ? 'ଡ୍ୟାସବୋର୍ଡ' : 'Dashboard'}</span>
+          <span className="sm:hidden">{lang === 'or' ? 'ଡ୍ୟାସ' : 'Hub'}</span>
         </Link>
       ) : (
-        <Link href="/register-reporter" className="border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-[#0A1C16] px-3 py-1.5 rounded transition-colors">
-          {lang === 'or' ? 'ଯୋଗଦାନ କରନ୍ତୁ' : 'Contribute News'}
+        <Link href="/register-reporter" className="border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-[#0A1C16] px-2 sm:px-3 py-1 sm:py-1.5 rounded transition-colors text-[10px] sm:text-xs">
+          <span className="hidden sm:inline">{lang === 'or' ? 'ଯୋଗଦାନ କରନ୍ତୁ' : 'Contribute News'}</span>
+          <span className="sm:hidden">{lang === 'or' ? 'ଯୋଗଦାନ' : 'Contribute'}</span>
         </Link>
       )}
     </div>

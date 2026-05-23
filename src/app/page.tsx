@@ -110,12 +110,16 @@ export default async function Home({ searchParams }: { searchParams: { lang?: st
       
       {/* Primary Header */}
       <header className="bg-[#0B2B26] text-white">
-        <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3 shrink-0">
+            {/* Mobile Hamburger Menu */}
+            <button className="md:hidden text-[#C5A059] hover:text-white transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <div className="hidden sm:flex w-8 h-8 border-2 border-[#C5A059] items-center justify-center rounded">
               <span className="text-[#C5A059] font-bold text-sm">NP</span>
             </div>
-            <h1 className="text-xl font-bold tracking-wider text-white">SD NEWS HUB</h1>
+            <h1 className="text-lg sm:text-xl font-bold tracking-wider text-white whitespace-nowrap">SD NEWS <span className="hidden sm:inline">HUB</span></h1>
           </div>
           
           <nav className="hidden md:flex gap-8 text-sm font-semibold">
