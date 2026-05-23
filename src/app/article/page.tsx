@@ -40,8 +40,34 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
   return (
     <div className="min-h-screen flex flex-col bg-[#F4F1EA]">
       
-      {/* Universal News Header */}
-      <NewsAuthHeader lang="en" />
+      {/* Primary Header */}
+      <header className="bg-[#0B2B26] text-white">
+        <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded">
+              <span className="text-[#C5A059] font-bold text-sm">NP</span>
+            </div>
+            <h1 className="text-xl font-bold tracking-wider text-white">SD NEWS HUB</h1>
+          </Link>
+          
+          <nav className="hidden md:flex gap-8 text-sm font-semibold">
+            <Link href="/" className="hover:text-[#C5A059] transition-colors py-5">
+              Home
+            </Link>
+            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">
+              Odisha
+            </Link>
+            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">
+              Politics
+            </Link>
+            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">
+              Business
+            </Link>
+          </nav>
+          
+          <NewsAuthHeader lang="en" />
+        </div>
+      </header>
 
       {/* Main Content Area */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
