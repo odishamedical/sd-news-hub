@@ -12,12 +12,16 @@ export default function RegisterReporter() {
   const [formData, setFormData] = useState({
     // Step 1
     fullName: "",
+    organizationName: "",
     type: "Reporter",
     email: "",
     phone: "",
     whatsapp: "",
+    country: "India",
+    state: "",
+    district: "",
     address: "",
-    passportPhotoUrl: "",
+    passportPhotoBase64: "",
     // Step 2
     idPhotoUrl: "",
     affiliation: "",
@@ -32,6 +36,22 @@ export default function RegisterReporter() {
     agreementTerms: false
   });
 
+  const indianStates = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", 
+    "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", 
+    "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", 
+    "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", 
+    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+  ];
+
+  // For demonstration, a simple district list for Odisha. In a full app, this would be dynamic based on the state.
+  const odishaDistricts = [
+    "Angul", "Balangir", "Balasore", "Bargarh", "Bhadrak", "Boudh", "Cuttack", "Deogarh", "Dhenkanal", "Gajapati", 
+    "Ganjam", "Jagatsinghapur", "Jajpur", "Jharsuguda", "Kalahandi", "Kandhamal", "Kendrapara", "Kendujhar", "Khordha", 
+    "Koraput", "Malkangiri", "Mayurbhanj", "Nabarangpur", "Nayagarh", "Nuapada", "Puri", "Rayagada", "Sambalpur", 
+    "Subarnapur", "Sundargarh"
+  ];
+
   const handleCategoryToggle = (cat: string) => {
     setFormData(prev => ({
       ...prev,
@@ -39,6 +59,17 @@ export default function RegisterReporter() {
         ? prev.categories.filter(c => c !== cat)
         : [...prev.categories, cat]
     }));
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, passportPhotoBase64: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
@@ -154,11 +185,19 @@ export default function RegisterReporter() {
               {/* STEP 1 */}
               {step === 1 && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Full Name / Organization Name <span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Full Name <span className="text-red-500">*</span></label>
                       <input required type="text" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="e.g. Shyam Dash" />
                     </div>
+                    <div>
+                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Organization Name <span className="text-gray-400 font-normal ml-1">(If applicable)</span></label>
+                      <input type="text" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.organizationName} onChange={e => setFormData({...formData, organizationName: e.target.value})} placeholder="e.g. Odisha Daily" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-bold text-[#0A1C16] mb-2">Applicant Type <span className="text-red-500">*</span></label>
                       <select required className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
@@ -169,37 +208,94 @@ export default function RegisterReporter() {
                         <option>News Website</option>
                       </select>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-bold text-[#0A1C16] mb-2">Contact Email <span className="text-red-500">*</span></label>
                       <input required type="email" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="you@example.com" />
                     </div>
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Phone Number <span className="text-red-500">*</span></label>
-                      <input required type="tel" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+91..." />
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
+                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Phone Number <span className="text-red-500">*</span></label>
+                      <input required type="tel" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+91..." />
+                    </div>
+                    <div>
                       <label className="block text-sm font-bold text-[#0A1C16] mb-2">WhatsApp Number</label>
                       <input type="tel" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} placeholder="+91..." />
                     </div>
+                  </div>
+
+                  {/* Location Dropdowns */}
+                  <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
+                    <h3 className="font-bold text-[#0B2B26] border-b border-gray-200 pb-2 mb-4">Location Details</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold text-[#0A1C16] mb-2">Country <span className="text-red-500">*</span></label>
+                        <select className="w-full bg-white border border-gray-200 rounded px-3 py-2 focus:outline-none focus:border-[#C5A059]" value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})}>
+                          <option>India</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-[#0A1C16] mb-2">State <span className="text-red-500">*</span></label>
+                        <select required className="w-full bg-white border border-gray-200 rounded px-3 py-2 focus:outline-none focus:border-[#C5A059]" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value, district: ""})}>
+                          <option value="">Select State</option>
+                          {indianStates.map(state => (
+                            <option key={state} value={state}>{state}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-[#0A1C16] mb-2">District / City <span className="text-red-500">*</span></label>
+                        {formData.state === "Odisha" ? (
+                           <select required className="w-full bg-white border border-gray-200 rounded px-3 py-2 focus:outline-none focus:border-[#C5A059]" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})}>
+                             <option value="">Select District</option>
+                             {odishaDistricts.map(dist => (
+                               <option key={dist} value={dist}>{dist}</option>
+                             ))}
+                           </select>
+                        ) : (
+                          <input required type="text" className="w-full bg-white border border-gray-200 rounded px-3 py-2 focus:outline-none focus:border-[#C5A059]" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} placeholder="Enter District/City" />
+                        )}
+                      </div>
+                    </div>
                     <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Address / Location <span className="text-red-500">*</span></label>
-                      <input required type="text" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="City, District" />
+                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Detailed Address <span className="text-red-500">*</span></label>
+                      <input required type="text" className="w-full bg-white border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Street, landmark, PIN code" />
                     </div>
                   </div>
 
+                  {/* Active Photo Upload */}
                   <div>
-                    <label className="block text-sm font-bold text-[#0A1C16] mb-2">Passport Size Photo (For ID Card) <span className="text-gray-400 font-normal ml-2">Upload later</span></label>
-                    <div className="border-2 border-dashed border-gray-300 rounded bg-gray-50 p-6 flex flex-col items-center justify-center cursor-not-allowed opacity-70">
-                      <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                      <span className="text-sm font-bold text-gray-600">File upload securely unlocks upon approval</span>
+                    <label className="block text-sm font-bold text-[#0A1C16] mb-2">Passport Size Photo (For ID Card) <span className="text-red-500">*</span></label>
+                    <div className="border-2 border-dashed border-[#C5A059] rounded-lg bg-yellow-50/30 p-6 flex flex-col items-center justify-center transition-colors hover:bg-yellow-50 relative overflow-hidden group">
+                      {formData.passportPhotoBase64 ? (
+                         <div className="flex flex-col items-center">
+                           <img src={formData.passportPhotoBase64} alt="Passport Preview" className="w-32 h-32 object-cover rounded-full border-4 border-white shadow-md mb-3" />
+                           <span className="text-sm text-green-600 font-bold flex items-center gap-1"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Photo Captured</span>
+                           <span className="text-xs text-gray-500 mt-1 cursor-pointer hover:underline">Click below to retake</span>
+                         </div>
+                      ) : (
+                        <>
+                          <div className="bg-[#0B2B26] text-[#C5A059] p-3 rounded-full mb-3 shadow-sm group-hover:scale-110 transition-transform">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                          </div>
+                          <span className="text-sm font-bold text-[#0B2B26]">Take Photo or Upload</span>
+                          <span className="text-xs text-gray-500 mt-1 text-center max-w-xs">Face the camera directly in good lighting. This will be used for your Digital Press ID.</span>
+                        </>
+                      )}
+                      
+                      <input 
+                        required={!formData.passportPhotoBase64}
+                        type="file" 
+                        accept="image/*" 
+                        capture="user"
+                        onChange={handlePhotoUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        title="Take a photo or upload"
+                      />
                     </div>
                   </div>
+
                 </div>
               )}
 
