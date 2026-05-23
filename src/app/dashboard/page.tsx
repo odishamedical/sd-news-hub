@@ -4,244 +4,274 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { db, collection, addDoc, serverTimestamp, query, getDocs, where } from "@/lib/firebase";
+import NewsAuthHeader from "@/components/NewsAuthHeader";
 
-export default function ReporterDashboard() {
+const SD_PORTALS = [
+  {
+    name: "SD IT Hub",
+    tagline: "Domain, Hosting & Digital Services",
+    url: "https://sd-it-hub-w3sk.vercel.app/",
+    icon: "💻",
+    color: "from-blue-900 to-blue-700",
+    badge: "Tech"
+  },
+  {
+    name: "SD Gold Hub",
+    tagline: "Live Gold & Silver Market Rates",
+    url: "https://sd-gold-hub.vercel.app/",
+    icon: "🏅",
+    color: "from-yellow-800 to-yellow-600",
+    badge: "Finance"
+  },
+  {
+    name: "Bhulia Hub",
+    tagline: "Authentic Sambalpuri Sarees & Handloom",
+    url: "https://sd-bhulia-hub.vercel.app/",
+    icon: "🧵",
+    color: "from-red-900 to-red-700",
+    badge: "Handloom"
+  },
+  {
+    name: "Dehapa Health",
+    tagline: "Consult Doctors via Video Call",
+    url: "https://sd-dehapa-hub.vercel.app/",
+    icon: "🩺",
+    color: "from-teal-900 to-teal-700",
+    badge: "Health"
+  },
+  {
+    name: "SD Directory",
+    tagline: "Find Local Businesses & Services",
+    url: "https://sd-directory.vercel.app/",
+    icon: "📋",
+    color: "from-purple-900 to-purple-700",
+    badge: "Directory"
+  },
+  {
+    name: "SD News Hub",
+    tagline: "Odisha & India Breaking News",
+    url: "https://sd-news-hub.vercel.app/",
+    icon: "📰",
+    color: "from-[#0B2B26] to-[#1a4a40]",
+    badge: "News"
+  },
+];
+
+type ReporterStatus = "none" | "pending" | "approved";
+
+export default function UserDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [isApproved, setIsApproved] = useState<boolean | null>(null);
-  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  
-  const [articleData, setArticleData] = useState({
-    title: "",
-    category: "odisha", // match news.ts categories
-    source: "",
-    url: "",
-    image: ""
-  });
+  const [user, setUser] = useState<{ email: string; name: string } | null>(null);
+  const [reporterStatus, setReporterStatus] = useState<ReporterStatus>("none");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const email = localStorage.getItem("sd_current_user_email");
       if (!email) {
-        // Redirect to Auth Center with redirect_uri
         window.location.href = `https://sd-auth-center.vercel.app?redirect_uri=${encodeURIComponent(window.location.href)}`;
-      } else {
-        const userName = localStorage.getItem("sd_current_user_name");
-        setUser({ email, name: userName });
-        checkReporterStatus(email);
-        
-        setArticleData(prev => ({
-          ...prev,
-          source: userName || email.split("@")[0]
-        }));
+        return;
       }
+      const name = localStorage.getItem("sd_current_user_name") || "User";
+      setUser({ email, name });
+      checkReporterStatus(email);
     }
-  }, [router]);
+  }, []);
 
   const checkReporterStatus = async (email: string) => {
     try {
-      // Super admins bypass the reporter check
       const role = localStorage.getItem("sd_current_user_role");
       if (role === "super_admin") {
-        setIsApproved(true);
+        setReporterStatus("approved");
+        setLoading(false);
         return;
       }
 
-      // Query Firebase for this user's reporter application
       const q = query(collection(db, "news_reporters"), where("email", "==", email));
       const snapshot = await getDocs(q);
 
-      if (snapshot.empty) {
-        // No application found → redirect to registration form
-        window.location.href = "/register-reporter";
-        return;
-      }
-
-      // Check the status of their application
-      const application = snapshot.docs[0].data();
-      if (application.status === "approved") {
-        setIsApproved(true);
+      if (!snapshot.empty) {
+        const application = snapshot.docs[0].data();
+        setReporterStatus(application.status === "approved" ? "approved" : "pending");
       } else {
-        // Pending or rejected → show waiting screen
-        setIsApproved(false);
+        setReporterStatus("none");
       }
     } catch (e) {
       console.error(e);
-      setIsApproved(false);
+      setReporterStatus("none");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus("submitting");
-
-    try {
-      await addDoc(collection(db, "news_articles"), {
-        ...articleData,
-        authorEmail: user?.email,
-        pubDate: new Date().toUTCString(),
-        createdAt: serverTimestamp()
-      });
-      setStatus("success");
-      setArticleData({ ...articleData, title: "", url: "", image: "" }); // reset form fields
-      
-      setTimeout(() => setStatus("idle"), 3000);
-    } catch (error) {
-      console.error("Error submitting article:", error);
-      setStatus("error");
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("sd_current_user_email");
+    localStorage.removeItem("sd_current_user_name");
+    localStorage.removeItem("sd_current_user_role");
+    router.push("/");
   };
 
-  if (isApproved === null) {
-    return <div className="min-h-screen bg-[#F4F1EA] flex items-center justify-center">Loading...</div>;
-  }
-
-  if (isApproved === false) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-[#F4F1EA] flex flex-col">
-        {/* Primary Header */}
-        <header className="bg-[#0B2B26] text-white">
-          <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded">
-                <span className="text-[#C5A059] font-bold text-sm">NP</span>
-              </div>
-              <h1 className="text-xl font-bold tracking-wider text-white">SD NEWS HUB</h1>
-            </Link>
-          </div>
-        </header>
-        <div className="flex-1 flex items-center justify-center p-6 text-center">
-          <div className="bg-white p-10 rounded-xl shadow-xl max-w-md w-full border-t-4 border-[#C5A059]">
-            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </div>
-            <h2 className="text-2xl font-bold font-serif mb-3 text-[#0A1C16]">Application Under Review</h2>
-            <p className="text-gray-600 mb-8 text-sm leading-relaxed">
-              Your reporter application has been received and is currently being reviewed by the editorial team. You will be notified once your credentials are verified and your Digital ID Card is ready.
-            </p>
-            <Link href="/" className="bg-[#0B2B26] hover:bg-[#051815] text-[#C5A059] font-bold py-3 px-6 rounded w-full block transition-colors mb-3">
-              Return to News Hub
-            </Link>
-          </div>
+      <div className="min-h-screen bg-[#F4F1EA] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-[#C5A059] border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-[#0B2B26] font-semibold">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
 
+  const initials = user?.name?.substring(0, 2).toUpperCase() || "SD";
+
   return (
     <div className="min-h-screen bg-[#F4F1EA]">
-      {/* Header */}
-      <header className="bg-[#0B2B26] text-white h-16 flex items-center px-6 sticky top-0 z-50 shadow-md justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded">
-            <span className="text-[#C5A059] font-bold text-sm">NP</span>
-          </div>
-          <span className="text-xl font-bold tracking-wider hidden sm:block">SD NEWS HUB</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-semibold text-[#C5A059] border-r border-gray-600 pr-4">Reporter Desk</span>
-          <span className="text-xs font-bold text-white">{user?.name}</span>
+
+      {/* Primary Header */}
+      <header className="bg-[#0B2B26] text-white sticky top-0 z-50 shadow-md">
+        <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded">
+              <span className="text-[#C5A059] font-bold text-sm">NP</span>
+            </div>
+            <h1 className="text-xl font-bold tracking-wider text-white hidden sm:block">SD NEWS HUB</h1>
+          </Link>
+          <nav className="hidden md:flex gap-8 text-sm font-semibold">
+            <Link href="/" className="hover:text-[#C5A059] transition-colors py-5">Home</Link>
+            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Odisha</Link>
+            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Politics</Link>
+            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Business</Link>
+          </nav>
+          <NewsAuthHeader lang="en" />
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto py-12 px-4 sm:px-6">
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold font-serif text-[#0B2B26] mb-2">Publish Article</h1>
-          <p className="text-gray-600">Submit a new article, video, or update directly into the SD News stream.</p>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
+
+        {/* Welcome Banner */}
+        <div className="bg-gradient-to-r from-[#0B2B26] to-[#1a4a40] rounded-2xl p-8 mb-8 flex flex-col sm:flex-row items-center gap-6 shadow-xl">
+          <div className="w-20 h-20 rounded-full bg-[#C5A059] flex items-center justify-center text-[#0A1C16] text-3xl font-black shadow-lg flex-shrink-0">
+            {initials}
+          </div>
+          <div className="text-center sm:text-left flex-1">
+            <p className="text-[#C5A059] text-sm font-bold uppercase tracking-widest mb-1">Welcome back</p>
+            <h2 className="text-white text-3xl font-black font-serif mb-1">{user?.name}</h2>
+            <p className="text-gray-400 text-sm">{user?.email}</p>
+          </div>
+          <button onClick={handleLogout} className="border border-gray-600 text-gray-400 hover:text-white hover:border-white px-5 py-2 rounded-lg text-sm font-semibold transition-colors">
+            Sign Out
+          </button>
         </div>
 
-        {status === "success" && (
-          <div className="bg-green-50 border border-green-200 text-green-700 px-6 py-4 rounded-xl mb-6 font-semibold flex items-center justify-between">
-            Article published successfully to the live feed!
-            <Link href="/" className="text-sm underline hover:text-green-900">View Home Page</Link>
-          </div>
-        )}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        {status === "error" && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-xl mb-6 font-semibold">
-            Failed to publish article. Please check your connection.
-          </div>
-        )}
+          {/* Left Column */}
+          <div className="lg:col-span-2 space-y-8">
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-6 sm:p-10 border border-gray-100">
-          <div className="space-y-6">
-            
-            <div>
-              <label className="block text-sm font-bold text-[#0A1C16] mb-2">Headline / Title</label>
-              <input 
-                required
-                type="text" 
-                className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059] text-lg font-serif"
-                placeholder="Breaking news headline..."
-                value={articleData.title}
-                onChange={(e) => setArticleData({...articleData, title: e.target.value})}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-bold text-[#0A1C16] mb-2">News Category</label>
-                <select 
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]"
-                  value={articleData.category}
-                  onChange={(e) => setArticleData({...articleData, category: e.target.value})}
-                >
-                  <option value="breaking">Breaking / Headline</option>
-                  <option value="odisha">Odisha State News</option>
-                  <option value="politics">Politics & Govt</option>
-                  <option value="business">Business & Economy</option>
-                  <option value="tech">Technology</option>
-                  <option value="health">Healthcare</option>
-                  <option value="gold">Gold & Jewelry</option>
-                </select>
+            {/* SD Ecosystem Portals */}
+            <section>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-1 h-7 bg-[#C5A059] rounded-full"></div>
+                <h3 className="text-xl font-black text-[#0B2B26]">SD Ecosystem Portals</h3>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-[#0A1C16] mb-2">Reporting Source</label>
-                <input 
-                  required
-                  type="text" 
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]"
-                  value={articleData.source}
-                  onChange={(e) => setArticleData({...articleData, source: e.target.value})}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {SD_PORTALS.map((portal) => (
+                  <a
+                    key={portal.name}
+                    href={portal.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`bg-gradient-to-br ${portal.color} rounded-xl p-5 text-white group hover:shadow-xl transition-all hover:-translate-y-1 duration-300 flex items-center gap-4`}
+                  >
+                    <div className="text-4xl flex-shrink-0">{portal.icon}</div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded uppercase tracking-wider font-bold">{portal.badge}</span>
+                      <h4 className="font-black text-lg mt-1 leading-tight">{portal.name}</h4>
+                      <p className="text-white/70 text-xs mt-0.5 leading-snug">{portal.tagline}</p>
+                    </div>
+                    <svg className="w-5 h-5 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
+                  </a>
+                ))}
+              </div>
+            </section>
+
+          </div>
+
+          {/* Right Sidebar */}
+          <aside className="space-y-6">
+
+            {/* Reporter Status Card */}
+            {reporterStatus === "none" && (
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                <div className="bg-gradient-to-r from-[#0B2B26] to-[#1a4a40] px-5 py-4">
+                  <h4 className="text-white font-black text-lg">Become a Contributor</h4>
+                  <p className="text-gray-300 text-xs mt-1">Join the SD News Hub editorial network</p>
+                </div>
+                <div className="p-5 space-y-4">
+                  <div className="flex items-start gap-3 text-sm text-gray-600">
+                    <span className="text-[#C5A059] text-lg">✔</span>
+                    <span>Publish news directly to the live feed</span>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm text-gray-600">
+                    <span className="text-[#C5A059] text-lg">✔</span>
+                    <span>Get your Digital Press ID Card</span>
+                  </div>
+                  <div className="flex items-start gap-3 text-sm text-gray-600">
+                    <span className="text-[#C5A059] text-lg">✔</span>
+                    <span>Access editorial tools & analytics</span>
+                  </div>
+                  <Link href="/register-reporter" className="block w-full bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A1C16] font-black text-center py-3 rounded-lg mt-2 transition-colors shadow-md">
+                    Apply Now →
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {reporterStatus === "pending" && (
+              <div className="bg-white rounded-xl shadow-md border border-amber-200 overflow-hidden">
+                <div className="bg-amber-50 border-b border-amber-200 px-5 py-4 flex items-center gap-3">
+                  <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <h4 className="font-black text-amber-800">Application Pending</h4>
+                </div>
+                <div className="p-5">
+                  <p className="text-sm text-gray-600 leading-relaxed">Your contributor application is currently under review by our editorial team. We will notify you once it's approved and your Digital ID Card is ready.</p>
+                </div>
+              </div>
+            )}
+
+            {reporterStatus === "approved" && (
+              <div className="bg-white rounded-xl shadow-md border border-green-200 overflow-hidden">
+                <div className="bg-green-50 border-b border-green-200 px-5 py-4 flex items-center gap-3">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <h4 className="font-black text-green-800">Verified Contributor</h4>
+                </div>
+                <div className="p-5 space-y-3">
+                  <p className="text-sm text-gray-600">You have full access to the Reporter Desk. Publish news directly to the live feed.</p>
+                  <Link href="/reporter-desk" className="block w-full bg-[#0B2B26] hover:bg-[#051815] text-[#C5A059] font-black text-center py-3 rounded-lg transition-colors">
+                    Open Reporter Desk →
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {/* Quick Links */}
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 p-5">
+              <h4 className="font-black text-[#0B2B26] mb-4 text-sm uppercase tracking-wider">Quick Links</h4>
+              <div className="space-y-2">
+                <Link href="/" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-sm font-semibold text-gray-700 transition-colors">
+                  <span>🏠</span> SD News Hub Home
+                </Link>
+                <a href="https://sd-auth-center.vercel.app" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-sm font-semibold text-gray-700 transition-colors">
+                  <span>🔐</span> Manage My Account
+                </a>
+                <Link href="/register-reporter" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-sm font-semibold text-gray-700 transition-colors">
+                  <span>📝</span> Contributor Application
+                </Link>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-bold text-[#0A1C16] mb-2">Article Link / Video URL</label>
-              <input 
-                required
-                type="url" 
-                className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]"
-                placeholder="https://..."
-                value={articleData.url}
-                onChange={(e) => setArticleData({...articleData, url: e.target.value})}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-[#0A1C16] mb-2">Thumbnail Image URL (Optional)</label>
-              <input 
-                type="url" 
-                className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]"
-                placeholder="https://images.unsplash.com/..."
-                value={articleData.image}
-                onChange={(e) => setArticleData({...articleData, image: e.target.value})}
-              />
-            </div>
-
-            <div className="pt-4 border-t border-gray-100">
-              <button 
-                type="submit" 
-                disabled={status === "submitting"}
-                className="w-full bg-[#0B2B26] hover:bg-[#051815] text-[#C5A059] font-bold text-lg py-4 rounded transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
-              >
-                {status === "submitting" ? "Publishing..." : "Publish to Live Feed"}
-              </button>
-            </div>
-
-          </div>
-        </form>
+          </aside>
+        </div>
       </main>
     </div>
   );
