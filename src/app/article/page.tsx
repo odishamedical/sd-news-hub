@@ -1,5 +1,7 @@
 import React from "react";
 import Link from "next/link";
+import NewsAuthHeader from "@/components/NewsAuthHeader";
+import { getAggregateNews, getCustomNews } from "@/lib/news";
 
 export const dynamic = "force-dynamic";
 
@@ -20,31 +22,26 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
     );
   }
 
+  // Fetch all news to show in grid
+  const [rssNews, customNews] = await Promise.all([
+    getAggregateNews(),
+    getCustomNews()
+  ]);
+  
+  // Combine and pick recent news for the "Read Next" grid
+  const allNews = [...customNews, ...rssNews.national, ...rssNews.business, ...rssNews.sports];
+  const relatedNews = allNews.filter(n => n.link !== articleUrl).slice(0, 6);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#F4F1EA]">
       
-      {/* SD News Hub Reader Header */}
-      <header className="h-16 bg-[#0B2B26] text-white shrink-0 flex items-center justify-between px-6 border-b border-[#1a3d35] shadow-lg sticky top-0 z-50">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded bg-[#0A1C16]">
-              <span className="text-[#C5A059] font-bold text-sm">NP</span>
-            </div>
-            <span className="text-xl font-bold tracking-wider text-white hidden sm:block">SD NEWS HUB</span>
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link href="/" className="text-gray-400 hover:text-white px-3 py-2 text-sm font-bold transition-colors">
-            Return Home ✕
-          </Link>
-        </div>
-      </header>
+      {/* Universal News Header */}
+      <NewsAuthHeader lang="en" />
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left Column (Article Snippet & Primary Ad) */}
+        {/* Left Column (Article Snippet & Related News) */}
         <div className="lg:col-span-2 flex flex-col gap-8">
           
           {/* Top Banner Ad Placeholder */}
@@ -78,8 +75,36 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
           </article>
 
           {/* In-Feed Ad Placeholder */}
-          <div className="w-full h-64 bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center rounded text-gray-500 font-bold text-sm">
+          <div className="w-full h-32 bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center rounded text-gray-500 font-bold text-sm">
             [ In-Article AdSense Placeholder ]
+          </div>
+
+          {/* Related News Grid */}
+          <div>
+            <h2 className="text-2xl font-bold font-serif mb-6 text-[#0B2B26] border-b-2 border-[#C5A059] pb-2 inline-block">Read Next</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {relatedNews.map((item, idx) => (
+                <Link 
+                  key={idx} 
+                  href={`/article?url=${encodeURIComponent(item.link)}&title=${encodeURIComponent(item.title)}&source=${encodeURIComponent(item.source)}`}
+                  className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 cursor-pointer group flex flex-col h-full"
+                >
+                  <div className="h-40 relative overflow-hidden bg-[#0B2B26]">
+                    <img src={item.imageUrl || "/news_industry.png"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt={item.title} />
+                  </div>
+                  <div className="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      <span className="text-[10px] font-bold text-[#C5A059] uppercase block mb-1">{item.source}</span>
+                      <h4 className="font-bold text-sm mb-2 group-hover:text-[#0B2B26] line-clamp-3">{item.title}</h4>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-gray-500 mt-4 border-t pt-2">
+                      <span>{new Date(item.pubDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                      <span className="text-[#C5A059]">↗ Read</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
           </div>
 
         </div>
