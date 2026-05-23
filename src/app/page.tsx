@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { getAggregateNews, getCustomNews, NewsItem } from "@/lib/news";
 import NewsAuthHeader from "@/components/NewsAuthHeader";
+import MobileMenu from "@/components/MobileMenu";
 
 // Helper component for displaying a news card
 function NewsCard({ item, featured = false }: { item: NewsItem; featured?: boolean }) {
@@ -113,9 +114,7 @@ export default async function Home({ searchParams }: { searchParams: { lang?: st
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 shrink-0">
             {/* Mobile Hamburger Menu */}
-            <button className="md:hidden text-[#C5A059] hover:text-white transition-colors">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-            </button>
+            <MobileMenu lang={lang} />
             <div className="hidden sm:flex w-8 h-8 border-2 border-[#C5A059] items-center justify-center rounded">
               <span className="text-[#C5A059] font-bold text-sm">NP</span>
             </div>
