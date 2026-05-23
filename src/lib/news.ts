@@ -18,6 +18,7 @@ export interface NewsItem {
   pubDate: string;
   source: string;
   imageUrl?: string;
+  category?: string;
 }
 
 export interface NewsCategory {
