@@ -65,6 +65,20 @@ export default function UserDashboard() {
   const [reporterStatus, setReporterStatus] = useState<ReporterStatus>("none");
   const [loading, setLoading] = useState(true);
 
+  const getProjectUrl = (baseUrl: string) => {
+    if (!user) return baseUrl;
+    const url = new URL(baseUrl);
+    url.searchParams.set("sso_email", user.email);
+    url.searchParams.set("sso_name", user.name);
+    if (typeof window !== "undefined") {
+      const avatar = localStorage.getItem("sd_current_user_avatar");
+      if (avatar) url.searchParams.set("sso_avatar", avatar);
+      const role = localStorage.getItem("sd_current_user_role");
+      if (role) url.searchParams.set("sso_role", role);
+    }
+    return url.toString();
+  };
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const email = localStorage.getItem("sd_current_user_email");
@@ -178,7 +192,7 @@ export default function UserDashboard() {
                 {SD_PORTALS.map((portal) => (
                   <a
                     key={portal.name}
-                    href={portal.url}
+                    href={getProjectUrl(portal.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={`bg-gradient-to-br ${portal.color} rounded-xl p-5 text-white group hover:shadow-xl transition-all hover:-translate-y-1 duration-300 flex items-center gap-4`}
