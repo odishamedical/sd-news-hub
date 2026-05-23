@@ -47,7 +47,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
       throw new Error('Could not extract text from this publisher.');
     }
 
-    cleanHtml = DOMPurify.sanitize(article.content, {
+    cleanHtml = DOMPurify.sanitize(article.content || "", {
       USE_PROFILES: { html: true },
       FORBID_TAGS: ['script', 'style', 'iframe', 'form', 'object', 'embed'],
       FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'class', 'id']

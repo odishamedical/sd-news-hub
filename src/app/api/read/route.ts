@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     }
 
     // Sanitize HTML to prevent Cross-Site Scripting (XSS)
-    const cleanHtml = DOMPurify.sanitize(article.content, {
+    const cleanHtml = DOMPurify.sanitize(article.content || "", {
       USE_PROFILES: { html: true },
       FORBID_TAGS: ['script', 'style', 'iframe', 'form', 'object', 'embed'],
       FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
