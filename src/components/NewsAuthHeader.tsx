@@ -90,9 +90,15 @@ export default function NewsAuthHeader({ lang }: { lang: string }) {
         </>
       )}
       
-      <Link href="/register-reporter" className="border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-[#0A1C16] px-3 py-1.5 rounded transition-colors">
-        {lang === 'or' ? 'ଯୋଗଦାନ କରନ୍ତୁ' : 'Contribute News'}
-      </Link>
+      {userEmail ? (
+        <Link href="/dashboard" className="border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-[#0A1C16] px-3 py-1.5 rounded transition-colors">
+          {lang === 'or' ? 'ଡ୍ୟାସବୋର୍ଡ' : 'Dashboard'}
+        </Link>
+      ) : (
+        <Link href="/register-reporter" className="border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-[#0A1C16] px-3 py-1.5 rounded transition-colors">
+          {lang === 'or' ? 'ଯୋଗଦାନ କରନ୍ତୁ' : 'Contribute News'}
+        </Link>
+      )}
     </div>
   );
 }
