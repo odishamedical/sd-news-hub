@@ -63,6 +63,7 @@ export default function UserDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<{ email: string; name: string } | null>(null);
   const [reporterStatus, setReporterStatus] = useState<ReporterStatus>("none");
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const getProjectUrl = (baseUrl: string) => {
@@ -88,7 +89,9 @@ export default function UserDashboard() {
         return;
       }
       const name = localStorage.getItem("sd_current_user_name") || "User";
+      const role = localStorage.getItem("sd_current_user_role");
       setUser({ email, name });
+      setUserRole(role);
       checkReporterStatus(email);
     }
   }, []);
@@ -272,6 +275,11 @@ export default function UserDashboard() {
                 <Link href="/register-reporter" className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-sm font-semibold text-gray-700 transition-colors">
                   <span>📝</span> Contributor Application
                 </Link>
+                {userRole === "super_admin" && (
+                  <Link href="/admin" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#0B2B26] hover:text-[#C5A059] bg-[#F4F1EA] text-sm font-bold text-[#0B2B26] border border-[#C5A059] transition-colors mt-4">
+                    <span>👑</span> Editorial Admin Panel
+                  </Link>
+                )}
               </div>
             </div>
 
