@@ -1,9 +1,31 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function MobileMenu({ lang }: { lang: string }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string>("User");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const localEmail = localStorage.getItem("sd_current_user_email");
+      if (localEmail) {
+        setUserEmail(localEmail);
+        setUserName(localStorage.getItem("sd_current_user_name") || "User");
+      }
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("sd_current_user_email");
+    localStorage.removeItem("sd_current_user_name");
+    localStorage.removeItem("sd_current_user_role");
+    setUserEmail(null);
+    setUserName("User");
+    setIsOpen(false);
+    window.location.reload();
+  };
 
   return (
     <>
@@ -31,6 +53,34 @@ export default function MobileMenu({ lang }: { lang: string }) {
             <Link onClick={() => setIsOpen(false)} href="#" className="hover:text-[#C5A059] transition-colors">{lang === 'or' ? 'ରାଜନୀତି' : 'Politics'}</Link>
             <Link onClick={() => setIsOpen(false)} href="#" className="hover:text-[#C5A059] transition-colors">{lang === 'or' ? 'ବ୍ୟବସାୟ' : 'Business'}</Link>
           </nav>
+
+          <div className="mt-auto border-t border-[#1a3d35] pt-6 flex flex-col gap-4">
+            {userEmail ? (
+              <>
+                <div className="flex items-center gap-3 text-white mb-2">
+                  <div className="w-10 h-10 rounded bg-[#C5A059] text-[#0A1C16] flex items-center justify-center font-bold text-lg">
+                    {userName.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="font-bold">{userName}</div>
+                    <div className="text-xs text-gray-400">{userEmail}</div>
+                  </div>
+                </div>
+                <Link onClick={() => setIsOpen(false)} href="/dashboard" className="bg-[#C5A059] text-[#0A1C16] text-center font-bold py-3 rounded hover:bg-[#b08d4b] transition-colors">
+                  {lang === 'or' ? 'ଡ୍ୟାସବୋର୍ଡ' : 'Go to Dashboard'}
+                </Link>
+                <button onClick={handleLogout} className="border border-[#C5A059] text-[#C5A059] font-bold py-3 rounded hover:bg-[#C5A059] hover:text-[#0A1C16] transition-colors">
+                  {lang === 'or' ? 'ଲଗ୍ ଆଉଟ୍' : 'Sign Out'}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link onClick={() => setIsOpen(false)} href="https://sd-auth-center.vercel.app?redirect_uri=https://sd-news-hub.vercel.app" className="bg-[#C5A059] text-[#0A1C16] text-center font-bold py-3 rounded hover:bg-[#b08d4b] transition-colors">
+                  {lang === 'or' ? 'ଲଗଇନ୍ / ରେଜିଷ୍ଟର' : 'Login / Register'}
+                </Link>
+              </>
+            )}
+          </div>
         </div>
       )}
     </>
