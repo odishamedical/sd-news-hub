@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Readability } from '@mozilla/readability';
-import { JSDOM } from 'jsdom';
+import { parseHTML } from 'linkedom';
 import DOMPurify from 'isomorphic-dompurify';
 
 export async function GET(request: Request) {
@@ -24,9 +24,9 @@ export async function GET(request: Request) {
 
     const html = await response.text();
     
-    // Parse the HTML using JSDOM
-    const doc = new JSDOM(html, { url: targetUrl });
-    const reader = new Readability(doc.window.document);
+    // Parse the HTML using Linkedom (Vercel Edge/Serverless friendly)
+    const { document } = parseHTML(html);
+    const reader = new Readability(document);
     const article = reader.parse();
 
     if (!article) {

@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Readability } from "@mozilla/readability";
-import { JSDOM } from "jsdom";
+import { parseHTML } from "linkedom";
 import DOMPurify from "isomorphic-dompurify";
 
 export const dynamic = "force-dynamic";
@@ -39,8 +39,8 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
     }
 
     const html = await response.text();
-    const doc = new JSDOM(html, { url: articleUrl });
-    const reader = new Readability(doc.window.document);
+    const { document } = parseHTML(html);
+    const reader = new Readability(document);
     const article = reader.parse();
 
     if (!article || !article.content) {
