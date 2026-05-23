@@ -6,6 +6,7 @@ export default function MobileMenu({ lang }: { lang: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("User");
+  const [showLogout, setShowLogout] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -57,21 +58,29 @@ export default function MobileMenu({ lang }: { lang: string }) {
           <div className="mt-auto border-t border-[#1a3d35] pt-6 flex flex-col gap-4">
             {userEmail ? (
               <>
-                <div className="flex items-center gap-3 text-white mb-2">
-                  <div className="w-10 h-10 rounded bg-[#C5A059] text-[#0A1C16] flex items-center justify-center font-bold text-lg">
+                <button 
+                  onClick={() => setShowLogout(!showLogout)}
+                  className="flex items-center gap-3 text-white mb-2 text-left w-full hover:bg-[#1a3d35] p-2 -ml-2 rounded transition-colors"
+                >
+                  <div className="w-10 h-10 rounded bg-[#C5A059] text-[#0A1C16] flex items-center justify-center font-bold text-lg shrink-0">
                     {userName.substring(0, 2).toUpperCase()}
                   </div>
-                  <div>
-                    <div className="font-bold">{userName}</div>
-                    <div className="text-xs text-gray-400">{userEmail}</div>
+                  <div className="flex-1 overflow-hidden">
+                    <div className="font-bold truncate">{userName}</div>
+                    <div className="text-xs text-gray-400 truncate">{userEmail}</div>
                   </div>
-                </div>
+                  <svg className={`w-5 h-5 text-gray-400 transition-transform ${showLogout ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                
                 <Link onClick={() => setIsOpen(false)} href="/dashboard" className="bg-[#C5A059] text-[#0A1C16] text-center font-bold py-3 rounded hover:bg-[#b08d4b] transition-colors">
                   {lang === 'or' ? 'ଡ୍ୟାସବୋର୍ଡ' : 'Go to Dashboard'}
                 </Link>
-                <button onClick={handleLogout} className="border border-[#C5A059] text-[#C5A059] font-bold py-3 rounded hover:bg-[#C5A059] hover:text-[#0A1C16] transition-colors">
-                  {lang === 'or' ? 'ଲଗ୍ ଆଉଟ୍' : 'Sign Out'}
-                </button>
+                
+                {showLogout && (
+                  <button onClick={handleLogout} className="border border-red-500/30 text-red-400 font-bold py-3 rounded hover:bg-red-500/10 transition-colors animate-in fade-in slide-in-from-top-2">
+                    {lang === 'or' ? 'ଲଗ୍ ଆଉଟ୍' : 'Sign Out'}
+                  </button>
+                )}
               </>
             ) : (
               <>

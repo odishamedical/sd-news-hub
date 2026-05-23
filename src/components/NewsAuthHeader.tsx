@@ -6,6 +6,7 @@ import Link from "next/link";
 export default function NewsAuthHeader({ lang }: { lang: string }) {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("User");
+  const [showLogout, setShowLogout] = useState(false);
 
   const handleLangChange = (e: React.MouseEvent, newLang: string) => {
     e.preventDefault();
@@ -74,15 +75,27 @@ export default function NewsAuthHeader({ lang }: { lang: string }) {
       
       {/* Auth Links */}
       {userEmail ? (
-        <>
-          <div className="flex items-center gap-2 hidden sm:flex">
+        <div className="relative hidden sm:flex items-center">
+          <button 
+            onClick={() => setShowLogout(!showLogout)}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            title="Click to view account options"
+          >
             <div className="w-6 h-6 rounded bg-[#C5A059] text-[#0A1C16] flex items-center justify-center font-bold text-[10px]">
               {userName.substring(0, 2).toUpperCase()}
             </div>
             <span className="text-[#C5A059]">{userName}</span>
-          </div>
-          <button onClick={handleLogout} className="hover:text-red-400 transition-colors hidden sm:block uppercase">Sign Out</button>
-        </>
+            <svg className="w-3 h-3 text-[#C5A059]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+          </button>
+          
+          {showLogout && (
+            <div className="absolute top-full right-0 mt-3 w-32 bg-[#0B2B26] border border-[#1a3d35] rounded shadow-lg p-1 z-50 animate-in fade-in slide-in-from-top-2">
+              <button onClick={handleLogout} className="text-red-400 hover:text-red-300 hover:bg-[#1a3d35] rounded transition-colors uppercase whitespace-nowrap text-[10px] font-bold w-full text-left px-3 py-2">
+                Sign Out
+              </button>
+            </div>
+          )}
+        </div>
       ) : (
         <>
           <Link href="https://sd-auth-center.vercel.app?redirect_uri=https://sd-news-hub.vercel.app" className="hover:text-[#C5A059] transition-colors hidden sm:block">Login</Link>
