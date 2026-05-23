@@ -29,7 +29,12 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
   ]);
   
   // Combine and pick recent news for the "Read Next" grid
-  const allNews = [...customNews, ...rssNews.national, ...rssNews.business, ...rssNews.sports];
+  const allNews = [
+    ...(customNews || []), 
+    ...(rssNews.breaking || []), 
+    ...(rssNews.business || []), 
+    ...(rssNews.tech || [])
+  ];
   const relatedNews = allNews.filter(n => n.link !== articleUrl).slice(0, 6);
 
   return (
