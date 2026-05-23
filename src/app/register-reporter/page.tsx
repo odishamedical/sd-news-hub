@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { db, collection, addDoc, serverTimestamp } from "@/lib/firebase";
 import NewsAuthHeader from "@/components/NewsAuthHeader";
@@ -8,6 +8,13 @@ import NewsAuthHeader from "@/components/NewsAuthHeader";
 export default function RegisterReporter() {
   const [step, setStep] = useState(1);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsAdmin(localStorage.getItem("sd_current_user_role") === "super_admin");
+    }
+  }, []);
 
   const [formData, setFormData] = useState({
     // Step 1
@@ -409,26 +416,36 @@ export default function RegisterReporter() {
               )}
 
               {/* Navigation Buttons */}
-              <div className="mt-10 pt-6 border-t border-gray-100 flex justify-between gap-4">
-                {step > 1 ? (
-                  <button type="button" onClick={prevStep} className="px-6 py-3 border border-gray-300 text-gray-700 font-bold rounded hover:bg-gray-50 transition-colors">
-                    Back
-                  </button>
-                ) : <div></div>}
+              <div className="mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="flex gap-4 order-2 sm:order-1">
+                  {step > 1 ? (
+                    <button type="button" onClick={prevStep} className="px-6 py-3 border border-gray-300 text-gray-700 font-bold rounded hover:bg-gray-50 transition-colors">
+                      Back
+                    </button>
+                  ) : <div className="hidden sm:block"></div>}
+                  
+                  {isAdmin && step < 4 && (
+                    <button type="button" onClick={nextStep} className="px-4 py-3 bg-red-100 text-red-700 font-bold rounded hover:bg-red-200 transition-colors text-sm">
+                      Admin Skip ⚡
+                    </button>
+                  )}
+                </div>
 
-                {step < 4 ? (
-                  <button type="submit" className="px-8 py-3 bg-[#0B2B26] hover:bg-[#051815] text-[#C5A059] font-bold rounded transition-colors shadow-md">
-                    Continue to Step {step + 1}
-                  </button>
-                ) : (
-                  <button type="submit" disabled={status === "submitting"} className="px-10 py-3 bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A1C16] font-black rounded transition-colors shadow-lg disabled:opacity-70 flex items-center gap-2">
-                    {status === "submitting" ? (
-                      <><span className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0A1C16]"></span> Processing...</>
-                    ) : (
-                      "Submit Application"
-                    )}
-                  </button>
-                )}
+                <div className="order-1 sm:order-2 w-full sm:w-auto">
+                  {step < 4 ? (
+                    <button type="submit" className="w-full sm:w-auto px-8 py-3 bg-[#0B2B26] hover:bg-[#051815] text-[#C5A059] font-bold rounded transition-colors shadow-md">
+                      Continue to Step {step + 1}
+                    </button>
+                  ) : (
+                    <button type="submit" disabled={status === "submitting"} className="w-full sm:w-auto px-10 py-3 bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A1C16] font-black rounded transition-colors shadow-lg disabled:opacity-70 flex items-center justify-center gap-2">
+                      {status === "submitting" ? (
+                        <><span className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0A1C16]"></span> Processing...</>
+                      ) : (
+                        "Submit Application"
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
 
             </form>
