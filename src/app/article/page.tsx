@@ -3,12 +3,13 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
-export default function ArticlePage({ searchParams }: { searchParams: { url?: string, title?: string, source?: string } }) {
-  const articleUrl = searchParams.url || "#";
-  const title = searchParams.title || "Article";
-  const source = searchParams.source || "News Source";
+export default async function ArticlePage({ searchParams }: { searchParams: Promise<{ url?: string, title?: string, source?: string }> }) {
+  const resolvedParams = await searchParams;
+  const articleUrl = resolvedParams.url || "#";
+  const title = resolvedParams.title || "Article";
+  const source = resolvedParams.source || "News Source";
 
-  if (!searchParams.url) {
+  if (!resolvedParams.url) {
     return (
       <div className="min-h-screen bg-[#F4F1EA] text-[#0A1C16] flex items-center justify-center">
         <div className="text-center">
