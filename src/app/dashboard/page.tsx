@@ -40,17 +40,34 @@ export default function ReporterDashboard() {
 
   const checkReporterStatus = async (email: string) => {
     try {
-      // In a real app we'd verify the reporter by user UID, but doing rough match by full name / agency logic for demo
-      // We will allow Super Admins to bypass this check
+      // Super admins bypass the reporter check
       const role = localStorage.getItem("sd_current_user_role");
       if (role === "super_admin") {
         setIsApproved(true);
         return;
       }
 
-      setIsApproved(true); // Temporarily assume approved if logged in for this workflow
+      // Query Firebase for this user's reporter application
+      const q = query(collection(db, "news_reporters"), where("email", "==", email));
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        // No application found → redirect to registration form
+        window.location.href = "/register-reporter";
+        return;
+      }
+
+      // Check the status of their application
+      const application = snapshot.docs[0].data();
+      if (application.status === "approved") {
+        setIsApproved(true);
+      } else {
+        // Pending or rejected → show waiting screen
+        setIsApproved(false);
+      }
     } catch (e) {
       console.error(e);
+      setIsApproved(false);
     }
   };
 
@@ -81,15 +98,31 @@ export default function ReporterDashboard() {
 
   if (isApproved === false) {
     return (
-      <div className="min-h-screen bg-[#F4F1EA] flex items-center justify-center p-6 text-center">
-        <div className="bg-white p-10 rounded-xl shadow-xl max-w-md w-full border-t-4 border-red-500">
-          <h2 className="text-2xl font-bold font-serif mb-4 text-[#0A1C16]">Access Denied</h2>
-          <p className="text-gray-600 mb-8 text-sm leading-relaxed">
-            Your reporter application is either pending review or has not been approved yet. Please wait for an administrator to verify your credentials.
-          </p>
-          <Link href="/" className="bg-[#0B2B26] hover:bg-[#051815] text-[#C5A059] font-bold py-3 px-6 rounded w-full block transition-colors">
-            Return to News Hub
-          </Link>
+      <div className="min-h-screen bg-[#F4F1EA] flex flex-col">
+        {/* Primary Header */}
+        <header className="bg-[#0B2B26] text-white">
+          <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded">
+                <span className="text-[#C5A059] font-bold text-sm">NP</span>
+              </div>
+              <h1 className="text-xl font-bold tracking-wider text-white">SD NEWS HUB</h1>
+            </Link>
+          </div>
+        </header>
+        <div className="flex-1 flex items-center justify-center p-6 text-center">
+          <div className="bg-white p-10 rounded-xl shadow-xl max-w-md w-full border-t-4 border-[#C5A059]">
+            <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h2 className="text-2xl font-bold font-serif mb-3 text-[#0A1C16]">Application Under Review</h2>
+            <p className="text-gray-600 mb-8 text-sm leading-relaxed">
+              Your reporter application has been received and is currently being reviewed by the editorial team. You will be notified once your credentials are verified and your Digital ID Card is ready.
+            </p>
+            <Link href="/" className="bg-[#0B2B26] hover:bg-[#051815] text-[#C5A059] font-bold py-3 px-6 rounded w-full block transition-colors mb-3">
+              Return to News Hub
+            </Link>
+          </div>
         </div>
       </div>
     );
