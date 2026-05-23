@@ -30,7 +30,8 @@ export default function RegisterReporter() {
     address: "",
     passportPhotoBase64: "",
     // Step 2
-    idPhotoUrl: "",
+    adharVoterBase64: "",
+    otherIdBase64: "",
     affiliation: "",
     experience: "",
     portfolio: "",
@@ -79,6 +80,28 @@ export default function RegisterReporter() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setFormData(prev => ({ ...prev, passportPhotoBase64: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAdharUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, adharVoterBase64: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleOtherIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, otherIdBase64: reader.result as string }));
       };
       reader.readAsDataURL(file);
     }
@@ -314,11 +337,45 @@ export default function RegisterReporter() {
               {/* STEP 2 */}
               {step === 2 && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                  <div>
-                    <label className="block text-sm font-bold text-[#0A1C16] mb-2">Adhar / Voter / Press ID Upload <span className="text-gray-400 font-normal ml-2">Upload later</span></label>
-                    <div className="border-2 border-dashed border-gray-300 rounded bg-gray-50 p-6 flex flex-col items-center justify-center cursor-not-allowed opacity-70">
-                      <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                      <span className="text-sm font-bold text-gray-600">ID Verification securely unlocks upon approval</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Adhar / Voter Card (Front) <span className="text-red-500">*</span></label>
+                      <div className="border-2 border-dashed border-[#C5A059] rounded-lg bg-yellow-50/30 p-6 flex flex-col items-center justify-center transition-colors hover:bg-yellow-50 relative overflow-hidden group h-40">
+                        {formData.adharVoterBase64 ? (
+                           <div className="flex flex-col items-center">
+                             <img src={formData.adharVoterBase64} alt="Adhar Preview" className="h-20 object-contain rounded border-2 border-white shadow-md mb-2 bg-white" />
+                             <span className="text-xs text-green-600 font-bold flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Uploaded</span>
+                           </div>
+                        ) : (
+                          <>
+                            <div className="bg-[#0B2B26] text-[#C5A059] p-2 rounded-full mb-2 shadow-sm group-hover:scale-110 transition-transform">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4-4m-4 4l-4-4"></path></svg>
+                            </div>
+                            <span className="text-sm font-bold text-[#0B2B26]">Upload Govt ID</span>
+                          </>
+                        )}
+                        <input required={!formData.adharVoterBase64} type="file" accept="image/*,.pdf" onChange={handleAdharUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title="Upload Adhar or Voter ID" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Press ID / Other Document <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 p-6 flex flex-col items-center justify-center transition-colors hover:bg-gray-100 relative overflow-hidden group h-40">
+                        {formData.otherIdBase64 ? (
+                           <div className="flex flex-col items-center">
+                             <img src={formData.otherIdBase64} alt="Other ID Preview" className="h-20 object-contain rounded border-2 border-white shadow-md mb-2 bg-white" />
+                             <span className="text-xs text-green-600 font-bold flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Uploaded</span>
+                           </div>
+                        ) : (
+                          <>
+                            <div className="bg-gray-200 text-gray-500 p-2 rounded-full mb-2 shadow-sm group-hover:scale-110 transition-transform">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4-4m-4 4l-4-4"></path></svg>
+                            </div>
+                            <span className="text-sm font-bold text-gray-600">Upload Other ID</span>
+                          </>
+                        )}
+                        <input type="file" accept="image/*,.pdf" onChange={handleOtherIdUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title="Upload Secondary ID" />
+                      </div>
                     </div>
                   </div>
 
