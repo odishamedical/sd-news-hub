@@ -68,6 +68,7 @@ export default function UserDashboard() {
   const getProjectUrl = (baseUrl: string) => {
     if (!user) return baseUrl;
     const url = new URL(baseUrl);
+    url.searchParams.set("token", "sso_jump");
     url.searchParams.set("sso_email", user.email);
     url.searchParams.set("sso_name", user.name);
     if (typeof window !== "undefined") {
