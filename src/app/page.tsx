@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { getAggregateNews, getCustomNews, NewsItem } from "@/lib/news";
+import NewsAuthHeader from "@/components/NewsAuthHeader";
 
 // Helper component for displaying a news card
 function NewsCard({ item, featured = false }: { item: NewsItem; featured?: boolean }) {
@@ -132,21 +133,7 @@ export default async function Home({ searchParams }: { searchParams: { lang?: st
             </Link>
           </nav>
           
-          <div className="flex items-center gap-4 text-xs font-semibold">
-            {/* Language Switcher */}
-            <div className="flex border border-[#1a3d35] rounded overflow-hidden">
-              <Link href="/?lang=en" className={`px-2 py-1 ${lang === 'en' ? 'bg-[#C5A059] text-[#0A1C16]' : 'text-gray-400 hover:text-white transition-colors'}`}>EN</Link>
-              <Link href="/?lang=or" className={`px-2 py-1 ${lang === 'or' ? 'bg-[#C5A059] text-[#0A1C16]' : 'text-gray-400 hover:text-white transition-colors'}`}>ଓଡ଼ିଆ</Link>
-            </div>
-            
-            {/* Auth Links */}
-            <Link href="https://sd-auth-center.vercel.app" className="hover:text-[#C5A059] transition-colors hidden sm:block">Login</Link>
-            <Link href="https://sd-auth-center.vercel.app" className="bg-[#C5A059] text-[#0A1C16] hover:bg-[#b08d4b] px-3 py-1.5 rounded transition-colors hidden sm:block">Register</Link>
-            
-            <Link href="/register-reporter" className="border border-[#C5A059] text-[#C5A059] hover:bg-[#C5A059] hover:text-[#0A1C16] px-3 py-1.5 rounded transition-colors">
-              {lang === 'or' ? 'ଯୋଗଦାନ କରନ୍ତୁ' : 'Contribute News'}
-            </Link>
-          </div>
+          <NewsAuthHeader lang={lang} />
         </div>
       </header>
 
