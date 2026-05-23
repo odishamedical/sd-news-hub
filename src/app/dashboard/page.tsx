@@ -125,17 +125,6 @@ export default function UserDashboard() {
     router.push("/");
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F4F1EA] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-[#C5A059] border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-[#0B2B26] font-semibold">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
   const initials = user?.name?.substring(0, 2).toUpperCase() || "SD";
 
   return (
@@ -215,7 +204,12 @@ export default function UserDashboard() {
           <aside className="space-y-6">
 
             {/* Reporter Status Card */}
-            {reporterStatus === "none" && (
+            {loading ? (
+              <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden p-8 flex flex-col items-center justify-center gap-3">
+                <div className="w-8 h-8 border-4 border-[#C5A059] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Checking Status...</p>
+              </div>
+            ) : reporterStatus === "none" ? (
               <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
                 <div className="bg-gradient-to-r from-[#0B2B26] to-[#1a4a40] px-5 py-4">
                   <h4 className="text-white font-black text-lg">Become a Contributor</h4>
@@ -239,9 +233,7 @@ export default function UserDashboard() {
                   </Link>
                 </div>
               </div>
-            )}
-
-            {reporterStatus === "pending" && (
+            ) : reporterStatus === "pending" ? (
               <div className="bg-white rounded-xl shadow-md border border-amber-200 overflow-hidden">
                 <div className="bg-amber-50 border-b border-amber-200 px-5 py-4 flex items-center gap-3">
                   <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -251,9 +243,7 @@ export default function UserDashboard() {
                   <p className="text-sm text-gray-600 leading-relaxed">Your contributor application is currently under review by our editorial team. We will notify you once it's approved and your Digital ID Card is ready.</p>
                 </div>
               </div>
-            )}
-
-            {reporterStatus === "approved" && (
+            ) : reporterStatus === "approved" && (
               <div className="bg-white rounded-xl shadow-md border border-green-200 overflow-hidden">
                 <div className="bg-green-50 border-b border-green-200 px-5 py-4 flex items-center gap-3">
                   <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
