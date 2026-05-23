@@ -1,15 +1,12 @@
 import React from "react";
 import Link from "next/link";
-import { Readability } from "@mozilla/readability";
-import { parseHTML } from "linkedom";
-import DOMPurify from "isomorphic-dompurify";
 
 export const dynamic = "force-dynamic";
 
 export default async function ArticlePage({ searchParams }: { searchParams: Promise<{ url?: string, title?: string, source?: string }> }) {
   const resolvedParams = await searchParams;
   const articleUrl = resolvedParams.url || "#";
-  const title = resolvedParams.title || "Article";
+  const title = resolvedParams.title || "News Article";
   const source = resolvedParams.source || "News Source";
 
   if (!resolvedParams.url) {
@@ -21,40 +18,6 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
         </div>
       </div>
     );
-  }
-
-  // --- NATIVE READER MODE LOGIC ---
-  let cleanHtml = "";
-  let readerError = "";
-
-  try {
-    const response = await fetch(articleUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Publisher blocked access: ${response.status}`);
-    }
-
-    const html = await response.text();
-    const { document } = parseHTML(html);
-    const reader = new Readability(document);
-    const article = reader.parse();
-
-    if (!article || !article.content) {
-      throw new Error('Could not extract text from this publisher.');
-    }
-
-    cleanHtml = DOMPurify.sanitize(article.content || "", {
-      USE_PROFILES: { html: true },
-      FORBID_TAGS: ['script', 'style', 'iframe', 'form', 'object', 'embed'],
-      FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'class', 'id']
-    });
-  } catch (error: any) {
-    console.error("Native Reader failed:", error);
-    readerError = error.message || "Failed to load article natively.";
   }
 
   return (
@@ -69,63 +32,76 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
             </div>
             <span className="text-xl font-bold tracking-wider text-white hidden sm:block">SD NEWS HUB</span>
           </Link>
-          <div className="h-8 w-px bg-gray-600 hidden sm:block mx-2"></div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-[#C5A059] font-bold uppercase tracking-wider">{source}</span>
-            <span className="text-xs sm:text-sm font-medium text-gray-200 line-clamp-1 max-w-[200px] sm:max-w-md md:max-w-xl">{title}</span>
-          </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <a 
-            href={articleUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="hidden sm:flex text-xs font-bold bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A1C16] px-4 py-2 rounded transition-colors items-center gap-2"
-          >
-            <span>Open Original</span>
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-          </a>
           <Link href="/" className="text-gray-400 hover:text-white px-3 py-2 text-sm font-bold transition-colors">
-            Close ✕
+            Return Home ✕
           </Link>
         </div>
       </header>
 
-      {/* Reader Content */}
-      <main className="flex-1 w-full max-w-3xl mx-auto px-6 py-12 bg-white shadow-xl my-8 rounded-xl border border-gray-200">
-        {readerError ? (
-          <div className="text-center py-12">
-            <h2 className="text-xl font-bold text-red-600 mb-4">Reading Mode Unavailable</h2>
-            <p className="text-gray-600 mb-6">{readerError}</p>
-            <p className="text-sm text-gray-500 mb-8">This publisher strictly blocks native extraction. Please read the article on their official website.</p>
+      {/* Main Content Area */}
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Left Column (Article Snippet & Primary Ad) */}
+        <div className="lg:col-span-2 flex flex-col gap-8">
+          
+          {/* Top Banner Ad Placeholder */}
+          <div className="w-full h-24 bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center rounded text-gray-500 font-bold text-sm">
+            [ Top Banner Ad Placeholder (728x90) ]
+          </div>
+
+          {/* Article Brief Card */}
+          <article className="bg-white p-8 rounded-xl shadow-xl border border-gray-200 text-center">
+            <div className="inline-block px-3 py-1 bg-[#0A1C16] text-[#C5A059] text-xs font-bold uppercase tracking-widest rounded mb-6">
+              {source}
+            </div>
+            
+            <h1 className="text-3xl md:text-4xl font-black font-serif text-[#0A1C16] leading-tight mb-8">
+              {title}
+            </h1>
+
+            <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+              This news article is hosted on {source}. Click below to read the full, uninterrupted story on the official publisher's website.
+            </p>
+
             <a 
               href={articleUrl} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="inline-block font-bold bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A1C16] px-6 py-3 rounded transition-colors"
+              className="inline-flex items-center gap-2 bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A1C16] px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
             >
-              Read on Official Site
+              <span>Read Full Story on {source}</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
             </a>
-          </div>
-        ) : (
-          <article className="prose prose-lg prose-slate max-w-none">
-            <h1 className="text-3xl font-black font-serif mb-6 text-[#0A1C16] leading-tight">{title}</h1>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#C5A059] mb-8 pb-8 border-b border-gray-100">
-              <span>{source}</span>
-              <span>•</span>
-              <span>Native Reader Mode</span>
-            </div>
-            
-            {/* INJECT CLEAN HTML */}
-            <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />
           </article>
-        )}
+
+          {/* In-Feed Ad Placeholder */}
+          <div className="w-full h-64 bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center rounded text-gray-500 font-bold text-sm">
+            [ In-Article AdSense Placeholder ]
+          </div>
+
+        </div>
+
+        {/* Right Sidebar (Ads & Promos) */}
+        <aside className="flex flex-col gap-6">
+          {/* Square Ad Placeholder */}
+          <div className="w-full aspect-square bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center rounded text-gray-500 font-bold text-sm text-center p-4">
+            [ Sidebar Ad Placeholder (300x250) ]<br/><br/>Perfect for SD Ecosystem Cross-Promotion!
+          </div>
+
+          {/* Sticky Tall Ad Placeholder */}
+          <div className="w-full h-[600px] bg-gray-200 border-2 border-dashed border-gray-400 flex items-center justify-center rounded text-gray-500 font-bold text-sm sticky top-24">
+            [ Sticky Skyscraper Ad Placeholder (300x600) ]
+          </div>
+        </aside>
+
       </main>
       
       {/* Footer */}
-      <footer className="text-center py-8 text-xs text-gray-500">
-        Content extracted for readability. All rights belong to {source}.
+      <footer className="bg-[#0A1C16] text-center py-6 text-xs text-[#C5A059] mt-8">
+        © {new Date().getFullYear()} SD News Hub. All rights reserved.
       </footer>
     </div>
   );
