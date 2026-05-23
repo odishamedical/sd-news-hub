@@ -76,7 +76,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
         <div className="lg:col-span-2 flex flex-col gap-8">
           
           {/* Top Banner Ad: IT Hub */}
-          <a href="https://sd-it-hub.vercel.app/" target="_blank" rel="noopener noreferrer" className="block w-full h-24 md:h-28 rounded-xl overflow-hidden relative shadow-lg group">
+          <a href="https://sd-it-hub-w3sk.vercel.app/" target="_blank" rel="noopener noreferrer" className="block w-full h-24 md:h-28 rounded-xl overflow-hidden relative shadow-lg group">
             <img src="/ads/ad_ithub.png" alt="SD IT Hub" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             <div className="absolute inset-0 bg-gradient-to-r from-[#0B2B26]/90 to-transparent"></div>
             <div className="absolute inset-0 flex items-center justify-between px-8">
