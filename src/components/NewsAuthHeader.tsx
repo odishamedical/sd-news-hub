@@ -2,21 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
 
 export default function NewsAuthHeader({ lang }: { lang: string }) {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("User");
-  
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
-  const getLangUrl = (newLang: string) => {
-    // Return early if hooks aren't ready
-    if (!pathname) return `/?lang=${newLang}`;
-    const params = new URLSearchParams(searchParams?.toString() || "");
-    params.set('lang', newLang);
-    return `${pathname}?${params.toString()}`;
+  const handleLangChange = (e: React.MouseEvent, newLang: string) => {
+    e.preventDefault();
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set('lang', newLang);
+      window.location.href = `${window.location.pathname}?${params.toString()}`;
+    }
   };
 
   useEffect(() => {
@@ -71,8 +68,8 @@ export default function NewsAuthHeader({ lang }: { lang: string }) {
     <div className="flex items-center gap-4 text-xs font-semibold">
       {/* Language Switcher */}
       <div className="flex border border-[#1a3d35] rounded overflow-hidden">
-        <Link href={getLangUrl('en')} className={`px-2 py-1 ${lang === 'en' ? 'bg-[#C5A059] text-[#0A1C16]' : 'text-gray-400 hover:text-white transition-colors'}`}>EN</Link>
-        <Link href={getLangUrl('or')} className={`px-2 py-1 ${lang === 'or' ? 'bg-[#C5A059] text-[#0A1C16]' : 'text-gray-400 hover:text-white transition-colors'}`}>ଓଡ଼ିଆ</Link>
+        <button onClick={(e) => handleLangChange(e, 'en')} className={`px-2 py-1 ${lang === 'en' ? 'bg-[#C5A059] text-[#0A1C16]' : 'text-gray-400 hover:text-white transition-colors'}`}>EN</button>
+        <button onClick={(e) => handleLangChange(e, 'or')} className={`px-2 py-1 ${lang === 'or' ? 'bg-[#C5A059] text-[#0A1C16]' : 'text-gray-400 hover:text-white transition-colors'}`}>ଓଡ଼ିଆ</button>
       </div>
       
       {/* Auth Links */}
