@@ -46,8 +46,24 @@ export default function AdminDashboard() {
   // Auth Guard
   useEffect(() => {
     if (typeof window !== "undefined") {
+      // First extract any SSO tokens from URL if arriving from Auth Center
+      const params = new URLSearchParams(window.location.search);
+      const ssoRole = params.get("sso_role") || params.get("role");
+      const ssoEmail = params.get("sso_email") || params.get("email");
+      const ssoName = params.get("sso_name") || params.get("name");
+
+      let hasSsoParams = false;
+      if (ssoRole) { localStorage.setItem("sd_current_user_role", ssoRole); hasSsoParams = true; }
+      if (ssoEmail) { localStorage.setItem("sd_current_user_email", ssoEmail); hasSsoParams = true; }
+      if (ssoName) { localStorage.setItem("sd_current_user_name", ssoName); hasSsoParams = true; }
+
+      if (hasSsoParams) {
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+
       const role = localStorage.getItem("sd_current_user_role");
-      if (role !== "super_admin") {
+      if (role !== "super_admin" && role !== "admin") {
         router.push("/");
       } else {
         setIsAdmin(true);
@@ -100,7 +116,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleArticleAction = async (id: string, newStatus: "published" | "rejected", updatedData?: Partial<Article>) => {
+  const handleArticleAction = async (id: string, newStatus: Article["status"], updatedData?: Partial<Article>) => {
     setIsSaving(true);
     try {
       const articleRef = doc(db, "news_articles", id);
