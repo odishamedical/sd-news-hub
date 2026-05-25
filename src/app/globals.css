@@ -4,9 +4,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 
 :root {
-  --background: #F4F1EA;
-  --foreground: #0A1C16;
-  --sd-green: #0B2B26;
+  --background: #020610;
+  --foreground: #e2e8f0;
   --sd-gold: #C5A059;
   --sd-red: #E63946;
 }
