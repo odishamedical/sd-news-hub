@@ -4,15 +4,23 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { db, collection, addDoc, serverTimestamp } from "@/lib/firebase";
 import NewsAuthHeader from "@/components/NewsAuthHeader";
+import ProfileBlockerModal from "@/components/ProfileBlockerModal";
 
 export default function RegisterReporter() {
   const [step, setStep] = useState(1);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showProfileBlocker, setShowProfileBlocker] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       setIsAdmin(localStorage.getItem("sd_current_user_role") === "super_admin");
+      
+      const userEmail = localStorage.getItem("sd_current_user_email");
+      const isProfileComplete = localStorage.getItem("sd_current_user_profile_complete") === "true";
+      if (userEmail && !isProfileComplete) {
+        setShowProfileBlocker(true);
+      }
     }
   }, []);
 
@@ -126,6 +134,25 @@ export default function RegisterReporter() {
       setStatus("error");
     }
   };
+
+  if (showProfileBlocker) {
+    return (
+      <div className="min-h-screen bg-[#F4F1EA] flex flex-col">
+        <header className="bg-[#0B2B26] text-white">
+          <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded">
+                <span className="text-[#C5A059] font-bold text-sm">NP</span>
+              </div>
+              <h1 className="text-xl font-bold tracking-wider text-white">SD NEWS HUB</h1>
+            </Link>
+            <NewsAuthHeader lang="en" />
+          </div>
+        </header>
+        <ProfileBlockerModal onClose={() => window.location.href = "/"} />
+      </div>
+    );
+  }
 
   if (status === "success") {
     return (

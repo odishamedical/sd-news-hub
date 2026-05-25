@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { db, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "@/lib/firebase";
 import NewsAuthHeader from "@/components/NewsAuthHeader";
+import ProfileBlockerModal from "@/components/ProfileBlockerModal";
 
 type Article = {
   id: string;
@@ -20,6 +21,7 @@ export default function ReporterDesk() {
   const [user, setUser] = useState<{ email: string; name: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"submit" | "feed">("submit");
+  const [showProfileBlocker, setShowProfileBlocker] = useState(false);
   
   // Articles state
   const [myArticles, setMyArticles] = useState<Article[]>([]);
@@ -42,6 +44,14 @@ export default function ReporterDesk() {
         window.location.href = `https://sd-auth-center.vercel.app?redirect_uri=${encodeURIComponent(window.location.href)}`;
         return;
       }
+      
+      const isComplete = localStorage.getItem("sd_current_user_profile_complete") === "true";
+      if (!isComplete) {
+        setShowProfileBlocker(true);
+        setLoading(false);
+        return;
+      }
+
       const name = localStorage.getItem("sd_current_user_name") || "Reporter";
       setUser({ email, name });
       checkAccess(email);
@@ -145,6 +155,25 @@ export default function ReporterDesk() {
       setSubmitStatus("error");
     }
   };
+
+  if (showProfileBlocker) {
+    return (
+      <div className="min-h-screen bg-[#F4F1EA] flex flex-col">
+        <header className="bg-[#0B2B26] text-white">
+          <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+              <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded">
+                <span className="text-[#C5A059] font-bold text-sm">NP</span>
+              </div>
+              <h1 className="text-xl font-bold tracking-wider text-white">SD NEWS HUB</h1>
+            </Link>
+            <NewsAuthHeader lang="en" />
+          </div>
+        </header>
+        <ProfileBlockerModal onClose={() => window.location.href = "/"} />
+      </div>
+    );
+  }
 
   if (loading) {
     return (
