@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { db, collection, addDoc, serverTimestamp, storage } from "@/lib/firebase";
+import { db, collection, addDoc, serverTimestamp, storage, query, where, getDocs, doc, updateDoc } from "@/lib/firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import NewsAuthHeader from "@/components/NewsAuthHeader";
 
@@ -17,7 +17,15 @@ export default function RegisterReporter() {
     if (typeof window !== 'undefined') {
       const email = localStorage.getItem("sd_current_user_email") || "";
       setUserEmail(email);
-      setFormData(prev => ({ ...prev, email }));
+      
+      const isVip = sessionStorage.getItem("sd_vip_invite") === "true";
+      const vipName = sessionStorage.getItem("sd_vip_recipient_name") || "";
+      
+      setFormData(prev => ({ 
+        ...prev, 
+        email,
+        fullName: prev.fullName || vipName
+      }));
     }
   }, []);
 
@@ -100,6 +108,28 @@ export default function RegisterReporter() {
         status: "pending",
         createdAt: serverTimestamp()
       });
+
+      // Update invitation status if registering via VIP invite link
+      if (typeof window !== "undefined") {
+        const inviteId = sessionStorage.getItem("sd_vip_invite_id");
+        if (inviteId) {
+          try {
+            const q = query(collection(db, "reporter_invitations"), where("inviteId", "==", inviteId));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+              const inviteRef = doc(db, "reporter_invitations", snapshot.docs[0].id);
+              await updateDoc(inviteRef, { status: "registered" });
+            }
+            // Clear invite info from sessionStorage upon successful registration
+            sessionStorage.removeItem("sd_vip_invite");
+            sessionStorage.removeItem("sd_vip_recipient_name");
+            sessionStorage.removeItem("sd_vip_invite_id");
+          } catch (inviteErr) {
+            console.error("Failed to update invitation status:", inviteErr);
+          }
+        }
+      }
+
       setStatus("success");
     } catch (error) {
       console.error("Registration failed:", error);
