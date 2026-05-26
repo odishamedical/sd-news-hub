@@ -89,7 +89,7 @@ export default async function Home({ searchParams }: { searchParams: { lang?: st
 
   // Helper to merge custom news into rss categories
   const mergeNews = (rssItems: NewsItem[] = [], categoryKey: string) => {
-    const customItems = customNews.filter(n => n.category === categoryKey);
+    const customItems = customNews.filter((n: any) => n.status === "published" && n.category === categoryKey.toLowerCase());
     return [...customItems, ...rssItems];
   };
 

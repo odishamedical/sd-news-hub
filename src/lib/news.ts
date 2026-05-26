@@ -134,13 +134,14 @@ export async function getCustomNews(): Promise<NewsItem[]> {
       const data = doc.data();
       return {
         id: doc.id,
-        title: data.title,
-        link: data.url,
-        pubDate: data.pubDate || new Date().toUTCString(),
-        source: data.source,
-        imageUrl: data.image || null,
-        category: data.category
-      };
+        title: data.title || "Untitled Article",
+        link: data.url || `/article?id=${doc.id}`,
+        pubDate: data.pubDate || (data.createdAt?.toDate ? data.createdAt.toDate().toUTCString() : new Date().toUTCString()),
+        source: data.source || data.reporterName || "SD News Hub",
+        imageUrl: data.image || data.thumbnailBase64 || null,
+        category: (data.category || "").toLowerCase(),
+        status: (data.status || "").toLowerCase()
+      } as any;
     });
   } catch (error) {
     console.error("Error fetching custom news from Firebase:", error);

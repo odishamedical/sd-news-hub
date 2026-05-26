@@ -5,13 +5,35 @@ import { getAggregateNews, getCustomNews } from "@/lib/news";
 
 export const dynamic = "force-dynamic";
 
-export default async function ArticlePage({ searchParams }: { searchParams: Promise<{ url?: string, title?: string, source?: string }> }) {
+export default async function ArticlePage({ searchParams }: { searchParams: Promise<{ url?: string, title?: string, source?: string, id?: string }> }) {
   const resolvedParams = await searchParams;
-  const articleUrl = resolvedParams.url || "#";
-  const title = resolvedParams.title || "News Article";
-  const source = resolvedParams.source || "News Source";
+  let articleUrl = resolvedParams.url || "#";
+  let title = resolvedParams.title || "News Article";
+  let source = resolvedParams.source || "News Source";
+  let isCustom = false;
+  let customContent = "";
+  let imageUrl = "";
 
-  if (!resolvedParams.url) {
+  if (resolvedParams.id) {
+    isCustom = true;
+    try {
+      const { db } = await import("@/lib/firebase");
+      const { doc, getDoc } = await import("firebase/firestore");
+      const docRef = doc(db, "news_articles", resolvedParams.id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        title = data.title || title;
+        source = data.reporterName || data.source || "SD News Hub";
+        customContent = data.content || "";
+        imageUrl = data.thumbnailBase64 || data.image || "";
+      }
+    } catch (e) {
+      console.error("Error fetching custom article:", e);
+    }
+  }
+
+  if (!resolvedParams.url && !resolvedParams.id) {
     return (
       <div className="min-h-screen bg-[#F4F1EA] text-[#0A1C16] flex items-center justify-center">
         <div className="text-center">
@@ -91,29 +113,46 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
             </div>
           </a>
 
-          {/* Article Brief Card */}
-          <article className="bg-white p-8 rounded-xl shadow-xl border border-gray-200 text-center">
+          {/* Article Brief Card or Full Custom Content */}
+          <article className="bg-white p-8 rounded-xl shadow-xl border border-gray-200 text-left">
             <div className="inline-block px-3 py-1 bg-[#0A1C16] text-[#C5A059] text-xs font-bold uppercase tracking-widest rounded mb-6">
               {source}
             </div>
             
-            <h1 className="text-3xl md:text-4xl font-black font-serif text-[#0A1C16] leading-tight mb-8">
+            <h1 className="text-2xl md:text-3xl font-black font-serif text-[#0A1C16] leading-tight mb-6">
               {title}
             </h1>
 
-            <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-              This news article is hosted on {source}. Click below to read the full, uninterrupted story on the official publisher's website.
-            </p>
+            {isCustom ? (
+              <div className="space-y-6">
+                {imageUrl && (
+                  <div className="w-full aspect-video rounded-xl overflow-hidden mb-6 bg-slate-900 border border-slate-200">
+                    <img src={imageUrl} alt={title} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="text-gray-800 text-base leading-relaxed whitespace-pre-wrap font-serif text-left">
+                  {customContent}
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-gray-600 mb-8 max-w-2xl mx-auto text-center">
+                  This news article is hosted on {source}. Click below to read the full, uninterrupted story on the official publisher's website.
+                </p>
 
-            <a 
-              href={articleUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A1C16] px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
-            >
-              <span>Read Full Story on {source}</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-            </a>
+                <div className="text-center">
+                  <a 
+                    href={articleUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A1C16] px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                  >
+                    <span>Read Full Story on {source}</span>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                  </a>
+                </div>
+              </>
+            )}
           </article>
 
           {/* In-Feed Ad: Dehapa */}
