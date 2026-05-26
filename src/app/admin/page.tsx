@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { db, collection, getDocs, doc, updateDoc, query, orderBy } from "@/lib/firebase";
+import { db, collection, getDocs, doc, updateDoc, query, orderBy, limit } from "@/lib/firebase";
 
 interface Reporter {
   id: string;
@@ -116,7 +116,7 @@ export default function AdminDashboard() {
 
   const fetchReporters = async () => {
     try {
-      const q = query(collection(db, "news_reporters"), orderBy("createdAt", "desc"));
+      const q = query(collection(db, "news_reporters"), orderBy("createdAt", "desc"), limit(50));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
 
   const fetchArticles = async () => {
     try {
-      const q = query(collection(db, "news_articles"), orderBy("createdAt", "desc"));
+      const q = query(collection(db, "news_articles"), orderBy("createdAt", "desc"), limit(50));
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
