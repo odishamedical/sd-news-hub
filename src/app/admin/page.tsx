@@ -201,14 +201,9 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-40">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#C5A059]"></div>
-          </div>
-        ) : (
-          <div className="p-8 max-w-7xl mx-auto space-y-6">
-            
-            {/* TOP METRICS */}
+        <div className="p-8 max-w-7xl mx-auto space-y-6">
+          
+          {/* TOP METRICS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-5 flex items-center gap-4 shadow-lg">
                   <div className="w-12 h-12 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
@@ -383,7 +378,9 @@ export default function AdminDashboard() {
                      </div>
 
                      <div className="flex-1 overflow-y-auto divide-y divide-[#1F2937]">
-                        {reporters.filter(r => r.status === 'pending').length === 0 ? (
+                        {loading ? (
+                           <div className="p-6 text-center text-gray-500 text-xs animate-pulse">Loading applications...</div>
+                        ) : reporters.filter(r => r.status === 'pending').length === 0 ? (
                            <div className="p-6 text-center text-gray-500 text-sm">No new applications.</div>
                         ) : (
                            reporters.filter(r => r.status === 'pending').map(reporter => (
@@ -434,7 +431,6 @@ export default function AdminDashboard() {
                </div>
             </div>
           </div>
-        )}
       </main>
 
       {/* ARTICLE EDIT MODAL */}
