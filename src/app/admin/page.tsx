@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { db, collection, getDocs, doc, updateDoc, query, orderBy, limit, addDoc, serverTimestamp } from "@/lib/firebase";
+import { db, storage, collection, getDocs, doc, updateDoc, query, orderBy, limit, addDoc, serverTimestamp } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import DigitalPressId from "@/components/DigitalPressId";
 
 interface Reporter {
@@ -61,6 +62,8 @@ export default function AdminDashboard() {
   const [editReporterDistrict, setEditReporterDistrict] = useState("");
   const [editReporterScope, setEditReporterScope] = useState("");
   const [editReporterBloodGroup, setEditReporterBloodGroup] = useState("");
+  const [editReporterPhotoFile, setEditReporterPhotoFile] = useState<File | null>(null);
+  const [editReporterPhotoPreview, setEditReporterPhotoPreview] = useState("");
 
   const handleOpenReporterProfile = (reporter: Reporter) => {
     setSelectedReporter(reporter);
@@ -71,12 +74,33 @@ export default function AdminDashboard() {
     setEditReporterDistrict(reporter.district || "Odisha");
     setEditReporterScope(reporter.affiliation || "Local Contributor");
     setEditReporterBloodGroup((reporter as any).bloodGroup || "O+");
+    setEditReporterPhotoFile(null);
+    setEditReporterPhotoPreview(reporter.photoUrl || "");
     setIsEditingReporter(false);
   };
 
   const handleSaveReporterDetails = async () => {
     if (!selectedReporter) return;
+    setIsSaving(true);
     try {
+      let finalPhotoUrl = editReporterPhotoPreview;
+      if (editReporterPhotoFile) {
+        const fileRef = ref(storage, `reporters/photos/${Date.now()}_${editReporterPhotoFile.name}`);
+        const uploadTask = uploadBytesResumable(fileRef, editReporterPhotoFile);
+        await new Promise((resolve, reject) => {
+          uploadTask.on(
+            "state_changed",
+            null,
+            (error) => reject(error),
+            async () => {
+              const url = await getDownloadURL(uploadTask.snapshot.ref);
+              finalPhotoUrl = url;
+              resolve(url);
+            }
+          );
+        });
+      }
+
       const reporterRef = doc(db, "news_reporters", selectedReporter.id);
       const updatedFields = {
         fullName: editReporterName,
@@ -87,7 +111,8 @@ export default function AdminDashboard() {
         phone: editReporterPhone,
         district: editReporterDistrict,
         affiliation: editReporterScope,
-        bloodGroup: editReporterBloodGroup
+        bloodGroup: editReporterBloodGroup,
+        photoUrl: finalPhotoUrl
       };
       await updateDoc(reporterRef, updatedFields);
       
@@ -98,6 +123,8 @@ export default function AdminDashboard() {
     } catch (err: any) {
       console.error(err);
       alert("Failed to update reporter: " + err.message);
+    } finally {
+      setIsSaving(false);
     }
   };
   const [reporterSearch, setReporterSearch] = useState("");
@@ -1074,6 +1101,21 @@ export default function AdminDashboard() {
                         <option>O+</option><option>O-</option>
                       </select>
                     </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Profile Photo</label>
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setEditReporterPhotoFile(file);
+                            setEditReporterPhotoPreview(URL.createObjectURL(file));
+                          }
+                        }} 
+                        className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded px-3 py-2 text-xs text-white focus:border-[#C5A059] focus:outline-none"
+                      />
+                    </div>
                   </div>
                 ) : (
                   <>
@@ -1190,7 +1232,7 @@ export default function AdminDashboard() {
                   name={isEditingReporter ? editReporterName : (selectedReporter.fullName || "Unnamed Reporter")} 
                   agency={isEditingReporter ? editReporterAgency : (selectedReporter.organizationName || selectedReporter.agencyName || "SD NEWS HUB")} 
                   role="VERIFIED CONTRIBUTOR"
-                  photoUrl={selectedReporter.photoUrl}
+                  photoUrl={isEditingReporter ? editReporterPhotoPreview : selectedReporter.photoUrl}
                   idNumber={`SDNH-2026-VIP-${(selectedReporter.id || "TEMP").substring(0, 5).toUpperCase()}`}
                   validUntil="DEC 2028"
                   bloodGroup={isEditingReporter ? editReporterBloodGroup : ((selectedReporter as any).bloodGroup || "O+")}
