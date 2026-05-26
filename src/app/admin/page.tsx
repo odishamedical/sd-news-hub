@@ -448,10 +448,10 @@ export default function AdminDashboard() {
                      </div>
                   </div>
 
-               </div>
-            </div>
+                </div>
+             </div>
           </div>
-      </main>
+       </main>
 
       {/* ARTICLE EDIT MODAL */}
       {editingArticle && (
@@ -556,6 +556,8 @@ export default function AdminDashboard() {
 
           </div>
         </div>
+      )}
+
       {/* ADD REPORTER MODAL */}
       {isAddReporterOpen && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
