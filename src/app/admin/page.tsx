@@ -188,6 +188,10 @@ export default function AdminDashboard() {
         router.push("/");
       } else {
         setIsAdmin(true);
+        const tabParam = params.get("tab");
+        if (tabParam === "articles" || tabParam === "reporters" || tabParam === "dashboard") {
+          setActiveTab(tabParam as any);
+        }
         fetchData();
       }
     }
