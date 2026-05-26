@@ -34,6 +34,7 @@ export default function AdvancedNewsGenerator() {
   // Media State
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState("");
+  const [aiImagePrompt, setAiImagePrompt] = useState("");
 
   useEffect(() => {
     // Check admin access
@@ -82,6 +83,7 @@ export default function AdvancedNewsGenerator() {
         setSeoMetaDesc(aiData.summary_en || "");
         setSeoKeywords(aiData.seo_keywords || "");
         setHashtags(aiData.hashtags || "");
+        setAiImagePrompt(aiData.thumbnail_prompt || "");
       } else {
         alert(resData.error || "Failed to generate content from AI");
       }
@@ -91,6 +93,24 @@ export default function AdvancedNewsGenerator() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleGenerateAIImage = () => {
+    const finalPrompt = aiImagePrompt || `Realistic news photo for article about ${category} in ${state || 'Odisha'}: ${prompt}`;
+    setLoading(true);
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}?width=1024&height=576&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
+    setThumbnailFile(null);
+    setThumbnailPreview(imageUrl);
+    setLoading(false);
   };
 
   const uploadFile = async (file: File): Promise<string> => {
@@ -119,7 +139,14 @@ export default function AdvancedNewsGenerator() {
     try {
       let finalThumbnailUrl = "";
       if (thumbnailFile) {
-        finalThumbnailUrl = await uploadFile(thumbnailFile);
+        try {
+          finalThumbnailUrl = await uploadFile(thumbnailFile);
+        } catch (uploadError) {
+          console.warn("Storage upload failed, falling back to Base64:", uploadError);
+          finalThumbnailUrl = await fileToBase64(thumbnailFile);
+        }
+      } else if (thumbnailPreview) {
+        finalThumbnailUrl = thumbnailPreview;
       }
 
       const reporterEmail = localStorage.getItem("sd_current_user_email") || "admin@sdnewshub.com";
@@ -342,6 +369,19 @@ export default function AdvancedNewsGenerator() {
             <div className="bg-[#050810] border border-[#1C2438] rounded-xl p-6 shadow-lg">
               <h3 className="text-xs font-black uppercase tracking-wider text-white mb-4 border-b border-[#1C2438] pb-2">Media & Thumbnail</h3>
               
+              {aiImagePrompt && (
+                <div className="mb-4">
+                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">AI Image Generation Prompt</label>
+                  <textarea 
+                    value={aiImagePrompt} 
+                    onChange={e => setAiImagePrompt(e.target.value)} 
+                    rows={3} 
+                    className="w-full bg-[#0A0F1C] border border-[#1C2438] rounded-lg p-2 text-xs text-white focus:border-[#C5A059] focus:outline-none leading-relaxed font-mono"
+                    placeholder="Enter prompt to generate an image..."
+                  />
+                </div>
+              )}
+
               <div className="aspect-video w-full bg-[#0A0F1C] border-2 border-dashed border-[#1C2438] rounded-lg overflow-hidden relative group flex flex-col items-center justify-center">
                  {thumbnailPreview ? (
                    <>
@@ -359,15 +399,20 @@ export default function AdvancedNewsGenerator() {
                  )}
                  <input type="file" accept="image/*" onChange={handlePhotoSelect} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
               </div>
-              <button className="w-full mt-3 py-2 bg-[#1C2438] text-gray-300 text-xs font-bold rounded flex items-center justify-center gap-2 hover:bg-[#2A344A] transition-colors">
-                 <svg className="w-3 h-3 text-[#C5A059]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99z"/></svg>
-                 Generate AI Thumbnail Instead
-              </button>
-            </div>
+               <button 
+                 type="button"
+                 onClick={handleGenerateAIImage}
+                 disabled={!aiImagePrompt && !prompt}
+                 className="w-full mt-3 py-2 bg-[#1C2438] text-gray-300 text-xs font-bold rounded flex items-center justify-center gap-2 hover:bg-[#2A344A] transition-colors border border-gray-700 disabled:opacity-50"
+               >
+                  <svg className="w-3 h-3 text-[#C5A059]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99z"/></svg>
+                  Generate AI Thumbnail
+               </button>
+             </div>
 
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-}
+           </div>
+         </div>
+       </main>
+     </div>
+   );
+ }
