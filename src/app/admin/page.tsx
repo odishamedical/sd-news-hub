@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { db, collection, getDocs, doc, updateDoc, query, orderBy, limit } from "@/lib/firebase";
+import { db, collection, getDocs, doc, updateDoc, query, orderBy, limit, addDoc, serverTimestamp } from "@/lib/firebase";
 
 interface Reporter {
   id: string;
@@ -48,6 +48,77 @@ export default function AdminDashboard() {
   const [aiTone, setAiTone] = useState("Professional");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedArticle, setGeneratedArticle] = useState<any>(null);
+
+  // Add Reporter Modal State
+  const [isAddReporterOpen, setIsAddReporterOpen] = useState(false);
+  const [addName, setAddName] = useState("");
+  const [addEmail, setAddEmail] = useState("");
+  const [addPhone, setAddPhone] = useState("");
+  const [addAgency, setAddAgency] = useState("");
+  const [addArea, setAddArea] = useState("");
+  const [isAddingReporter, setIsAddingReporter] = useState(false);
+
+  // Invite Modal State
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [inviteName, setInviteName] = useState("");
+  const [invitePhone, setInvitePhone] = useState("");
+  const [generatedInviteUrl, setGeneratedInviteUrl] = useState("");
+
+  const handleAddReporterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addName || !addEmail || !addPhone) return alert("Please fill Name, Email and Phone.");
+    setIsAddingReporter(true);
+    try {
+      await addDoc(collection(db, "news_reporters"), {
+        fullName: addName,
+        email: addEmail.toLowerCase(),
+        phone: addPhone,
+        whatsapp: addPhone,
+        organizationName: addAgency || "Independent",
+        district: addArea || "Odisha",
+        status: "approved",
+        createdAt: serverTimestamp()
+      });
+      alert("Reporter successfully added!");
+      setIsAddReporterOpen(false);
+      // Clear forms
+      setAddName("");
+      setAddEmail("");
+      setAddPhone("");
+      setAddAgency("");
+      setAddArea("");
+      fetchReporters();
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to add reporter: " + err.message);
+    } finally {
+      setIsAddingReporter(false);
+    }
+  };
+
+  const handleCreateInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!invitePhone) return alert("Please enter a phone number.");
+    
+    // Generate a unique invitation ID
+    const inviteId = "inv_" + Math.random().toString(36).substring(2, 10);
+    const inviteUrl = `${window.location.origin}/invite/${inviteId}`;
+    
+    try {
+      await addDoc(collection(db, "reporter_invitations"), {
+        inviteId,
+        recipientName: inviteName || "VIP Contributor",
+        phone: invitePhone,
+        status: "pending",
+        createdAt: serverTimestamp()
+      });
+      
+      setGeneratedInviteUrl(inviteUrl);
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to create invitation: " + err.message);
+    }
+  };
 
   const handleGenerateNews = async () => {
     if (!aiPrompt) return alert("Please enter a prompt");
@@ -308,13 +379,22 @@ export default function AdminDashboard() {
                      </div>
                      
                      <div className="p-4 border-b border-[#1F2937] shrink-0 space-y-3 bg-[#0A0F1C]/50">
-                        <button className="w-full bg-[#1F2937] hover:bg-[#374151] text-white font-bold py-2 rounded text-sm transition-colors border border-gray-600">
+                        <button 
+                           onClick={() => setIsAddReporterOpen(true)}
+                           className="w-full bg-[#1F2937] hover:bg-[#374151] text-white font-bold py-2 rounded text-sm transition-colors border border-gray-600"
+                        >
                            + Add Reporter / Agency
                         </button>
-                        <Link href="/admin/invite" className="w-full bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-600/50 font-bold py-2 rounded text-sm transition-colors flex items-center justify-center gap-2">
+                        <button 
+                           onClick={() => {
+                             setIsInviteOpen(true);
+                             setGeneratedInviteUrl("");
+                           }}
+                           className="w-full bg-green-600/20 hover:bg-green-600/30 text-green-400 border border-green-600/50 font-bold py-2 rounded text-sm transition-colors flex items-center justify-center gap-2"
+                        >
                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.573-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.304-.058.116-.087.188-.173.289l-.26.304c-.087.086-.177.18-.076.354.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86s.274.072.376-.043c.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.045.072.045.419-.099.824zm-3.423-14.416c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm.082 19.165s-1.815-.011-3.482-.907l-3.91 1.027 1.043-3.809c-1.002-1.724-1.533-3.702-1.533-5.779 0-6.236 5.066-11.303 11.303-11.303 6.237 0 11.303 5.066 11.303 11.303 0 6.236-5.065 11.303-11.303 11.303z"/></svg>
                            Invite via WhatsApp
-                        </Link>
+                        </button>
                      </div>
 
                      <div className="flex-1 overflow-y-auto divide-y divide-[#1F2937]">
@@ -474,6 +554,100 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+          </div>
+        </div>
+      {/* ADD REPORTER MODAL */}
+      {isAddReporterOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#111827] border border-[#1F2937] rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+            <div className="bg-[#050810] border-b border-[#1F2937] px-6 py-4 flex justify-between items-center">
+              <h3 className="font-black text-lg text-[#C5A059]">Add Verified Reporter / Agency</h3>
+              <button onClick={() => setIsAddReporterOpen(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <form onSubmit={handleAddReporterSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Full Legal Name *</label>
+                <input required value={addName} onChange={e => setAddName(e.target.value)} className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded p-2 focus:border-[#C5A059] focus:outline-none text-white text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Email Address *</label>
+                <input required type="email" value={addEmail} onChange={e => setAddEmail(e.target.value)} className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded p-2 focus:border-[#C5A059] focus:outline-none text-white text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">WhatsApp / Phone *</label>
+                <input required value={addPhone} onChange={e => setAddPhone(e.target.value)} className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded p-2 focus:border-[#C5A059] focus:outline-none text-white text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">News Agency / Publication Name</label>
+                <input value={addAgency} onChange={e => setAddAgency(e.target.value)} placeholder="e.g. Independent, OTV, etc." className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded p-2 focus:border-[#C5A059] focus:outline-none text-white text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Coverage Area / District</label>
+                <input value={addArea} onChange={e => setAddArea(e.target.value)} placeholder="e.g. Khordha, Bhubaneswar" className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded p-2 focus:border-[#C5A059] focus:outline-none text-white text-sm" />
+              </div>
+              <button type="submit" disabled={isAddingReporter} className="w-full py-3 bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A1C16] font-black rounded-lg transition-colors text-sm uppercase">
+                {isAddingReporter ? "Adding Reporter..." : "Add & Accredit Reporter"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* WHATSAPP INVITE MODAL */}
+      {isInviteOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+          <div className="bg-[#111827] border border-[#1F2937] rounded-xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+            <div className="bg-[#050810] border-b border-[#1F2937] px-6 py-4 flex justify-between items-center">
+              <h3 className="font-black text-lg text-green-400">Generate VIP Reporter Invitation</h3>
+              <button onClick={() => setIsInviteOpen(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+            <div className="p-6 space-y-4">
+              {!generatedInviteUrl ? (
+                <form onSubmit={handleCreateInvite} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Reporter Name (Optional)</label>
+                    <input value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="e.g. Ramesh Kumar" className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded p-2 focus:border-[#C5A059] focus:outline-none text-white text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">WhatsApp Number *</label>
+                    <input required value={invitePhone} onChange={e => setInvitePhone(e.target.value)} placeholder="With country code, e.g. 919876543210" className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded p-2 focus:border-[#C5A059] focus:outline-none text-white text-sm" />
+                  </div>
+                  <button type="submit" className="w-full py-3 bg-green-600 hover:bg-green-500 text-white font-black rounded-lg transition-colors text-sm uppercase">
+                    Generate Invitation Link
+                  </button>
+                </form>
+              ) : (
+                <div className="space-y-4 text-center">
+                  <div className="p-3 bg-green-500/10 border border-green-500/20 text-green-400 rounded text-xs font-bold">
+                    Invitation successfully generated!
+                  </div>
+                  <div className="text-left bg-[#0A0F1C] border border-[#1F2937] p-3 rounded font-mono text-xs select-all text-gray-300 break-all">
+                    {generatedInviteUrl}
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(generatedInviteUrl);
+                        alert("Link copied to clipboard!");
+                      }} 
+                      className="flex-1 py-2 bg-[#1C2438] hover:bg-[#2A344A] text-white font-bold rounded text-xs border border-gray-600"
+                    >
+                      Copy Link
+                    </button>
+                    <a 
+                      href={`https://api.whatsapp.com/send?phone=${invitePhone}&text=${encodeURIComponent(
+                        `Hi ${inviteName || "Reporter"}, you are exclusively invited to join SD News Hub as a verified contributor. Please complete your registration here: ${generatedInviteUrl}`
+                      )}`}
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="flex-1 py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded text-xs text-center flex items-center justify-center gap-1"
+                    >
+                      Send via WhatsApp
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
