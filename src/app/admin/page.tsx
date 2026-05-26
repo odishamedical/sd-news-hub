@@ -53,6 +53,53 @@ export default function AdminDashboard() {
   // Tab Switcher & Search States
   const [activeTab, setActiveTab] = useState<"dashboard" | "articles" | "reporters">("dashboard");
   const [selectedReporter, setSelectedReporter] = useState<Reporter | null>(null);
+  const [isEditingReporter, setIsEditingReporter] = useState(false);
+  const [editReporterName, setEditReporterName] = useState("");
+  const [editReporterAgency, setEditReporterAgency] = useState("");
+  const [editReporterEmail, setEditReporterEmail] = useState("");
+  const [editReporterPhone, setEditReporterPhone] = useState("");
+  const [editReporterDistrict, setEditReporterDistrict] = useState("");
+  const [editReporterScope, setEditReporterScope] = useState("");
+  const [editReporterBloodGroup, setEditReporterBloodGroup] = useState("");
+
+  const handleOpenReporterProfile = (reporter: Reporter) => {
+    setSelectedReporter(reporter);
+    setEditReporterName(reporter.fullName || "");
+    setEditReporterAgency(reporter.organizationName || reporter.agencyName || "Independent");
+    setEditReporterEmail(reporter.email || "");
+    setEditReporterPhone(reporter.whatsapp || reporter.phone || "");
+    setEditReporterDistrict(reporter.district || "Odisha");
+    setEditReporterScope(reporter.affiliation || "Local Contributor");
+    setEditReporterBloodGroup((reporter as any).bloodGroup || "O+");
+    setIsEditingReporter(false);
+  };
+
+  const handleSaveReporterDetails = async () => {
+    if (!selectedReporter) return;
+    try {
+      const reporterRef = doc(db, "news_reporters", selectedReporter.id);
+      const updatedFields = {
+        fullName: editReporterName,
+        organizationName: editReporterAgency,
+        agencyName: editReporterAgency,
+        email: editReporterEmail,
+        whatsapp: editReporterPhone,
+        phone: editReporterPhone,
+        district: editReporterDistrict,
+        affiliation: editReporterScope,
+        bloodGroup: editReporterBloodGroup
+      };
+      await updateDoc(reporterRef, updatedFields);
+      
+      setReporters(prev => prev.map(r => r.id === selectedReporter.id ? { ...r, ...updatedFields } : r));
+      setSelectedReporter(prev => prev ? { ...prev, ...updatedFields } : null);
+      setIsEditingReporter(false);
+      alert("Reporter details updated successfully!");
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to update reporter: " + err.message);
+    }
+  };
   const [reporterSearch, setReporterSearch] = useState("");
   const [reporterStatusFilter, setReporterStatusFilter] = useState("all");
   const [articleSearch, setArticleSearch] = useState("");
@@ -690,7 +737,7 @@ export default function AdminDashboard() {
                               </span>
                             </td>
                             <td className="p-4 text-right">
-                              <button onClick={() => setSelectedReporter(reporter)} className="text-xs font-bold text-[#C5A059] border border-[#C5A059]/30 hover:bg-[#C5A059]/10 px-3 py-1.5 rounded transition-all">
+                              <button onClick={() => handleOpenReporterProfile(reporter)} className="text-xs font-bold text-[#C5A059] border border-[#C5A059]/30 hover:bg-[#C5A059]/10 px-3 py-1.5 rounded transition-all">
                                 View Profile
                               </button>
                             </td>
@@ -914,50 +961,160 @@ export default function AdminDashboard() {
             
             <div className="bg-[#050810] border-b border-[#1F2937] text-white px-6 py-4 flex items-center justify-between shrink-0">
               <div>
-                <h3 className="font-black text-lg text-[#C5A059]">Accredited Reporter Profile</h3>
+                <h3 className="font-black text-lg text-[#C5A059]">
+                  {isEditingReporter ? "Edit Reporter Profile" : "Accredited Reporter Profile"}
+                </h3>
                 <p className="text-xs text-gray-400">ID: {selectedReporter.id}</p>
               </div>
-              <button onClick={() => setSelectedReporter(null)} className="text-gray-400 hover:text-white">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-              </button>
+              <div className="flex items-center gap-3">
+                {!isEditingReporter ? (
+                  <button 
+                    onClick={() => setIsEditingReporter(true)}
+                    className="px-4 py-1.5 bg-[#1C2438] hover:bg-[#2A344A] text-white border border-[#C5A059]/30 rounded-lg text-xs font-bold transition-all"
+                  >
+                    Edit Profile
+                  </button>
+                ) : (
+                  <>
+                    <button 
+                      onClick={handleSaveReporterDetails}
+                      className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold transition-all"
+                    >
+                      Save Profile
+                    </button>
+                    <button 
+                      onClick={() => setIsEditingReporter(false)}
+                      className="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xs font-bold transition-all"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
+                <button onClick={() => setSelectedReporter(null)} className="text-gray-400 hover:text-white">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
             </div>
 
             <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 text-gray-200">
               
               {/* Profile Details */}
               <div className="space-y-6">
-                <div className="flex items-center gap-4 border-b border-[#1F2937] pb-6">
-                  <div className="w-16 h-16 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-2xl overflow-hidden shrink-0">
-                    {selectedReporter.photoUrl ? (
-                      <img src={selectedReporter.photoUrl} alt="Reporter Photo" className="w-full h-full object-cover" />
-                    ) : (
-                      (selectedReporter.fullName || "R").charAt(0)
-                    )}
+                
+                {isEditingReporter ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Full Legal Name</label>
+                      <input 
+                        type="text" 
+                        value={editReporterName} 
+                        onChange={e => setEditReporterName(e.target.value)} 
+                        className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded px-3 py-2 text-sm text-white focus:border-[#C5A059] focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">News Agency / Publication</label>
+                      <input 
+                        type="text" 
+                        value={editReporterAgency} 
+                        onChange={e => setEditReporterAgency(e.target.value)} 
+                        className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded px-3 py-2 text-sm text-white focus:border-[#C5A059] focus:outline-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Email Address</label>
+                        <input 
+                          type="email" 
+                          value={editReporterEmail} 
+                          onChange={e => setEditReporterEmail(e.target.value)} 
+                          className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded px-3 py-2 text-sm text-white focus:border-[#C5A059] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">WhatsApp / Phone</label>
+                        <input 
+                          type="text" 
+                          value={editReporterPhone} 
+                          onChange={e => setEditReporterPhone(e.target.value)} 
+                          className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded px-3 py-2 text-sm text-white focus:border-[#C5A059] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">District / Coverage</label>
+                        <input 
+                          type="text" 
+                          value={editReporterDistrict} 
+                          onChange={e => setEditReporterDistrict(e.target.value)} 
+                          className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded px-3 py-2 text-sm text-white focus:border-[#C5A059] focus:outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Coverage Scope</label>
+                        <input 
+                          type="text" 
+                          value={editReporterScope} 
+                          onChange={e => setEditReporterScope(e.target.value)} 
+                          className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded px-3 py-2 text-sm text-white focus:border-[#C5A059] focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Blood Group</label>
+                      <select 
+                        value={editReporterBloodGroup} 
+                        onChange={e => setEditReporterBloodGroup(e.target.value)} 
+                        className="w-full bg-[#0A0F1C] border border-[#1F2937] rounded px-3 py-2 text-sm text-white focus:border-[#C5A059] focus:outline-none"
+                      >
+                        <option>A+</option><option>A-</option>
+                        <option>B+</option><option>B-</option>
+                        <option>AB+</option><option>AB-</option>
+                        <option>O+</option><option>O-</option>
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-white">{selectedReporter.fullName || "Unnamed Reporter"}</h2>
-                    <p className="text-sm text-[#C5A059] font-bold uppercase tracking-widest">{selectedReporter.organizationName || selectedReporter.agencyName || "Independent"}</p>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-4 border-b border-[#1F2937] pb-6">
+                      <div className="w-16 h-16 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-2xl overflow-hidden shrink-0">
+                        {selectedReporter.photoUrl ? (
+                          <img src={selectedReporter.photoUrl} alt="Reporter Photo" className="w-full h-full object-cover" />
+                        ) : (
+                          (selectedReporter.fullName || "R").charAt(0)
+                        )}
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-black text-white">{selectedReporter.fullName || "Unnamed Reporter"}</h2>
+                        <p className="text-sm text-[#C5A059] font-bold uppercase tracking-widest">{selectedReporter.organizationName || selectedReporter.agencyName || "Independent"}</p>
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <div className="text-xs text-gray-500 font-bold uppercase mb-1">Email Address</div>
-                    <div className="text-white select-all">{selectedReporter.email}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 font-bold uppercase mb-1">WhatsApp / Phone</div>
-                    <div className="text-white select-all">{selectedReporter.whatsapp || selectedReporter.phone || "N/A"}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 font-bold uppercase mb-1">District / Coverage</div>
-                    <div className="text-white">{selectedReporter.district || "Odisha"}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-gray-500 font-bold uppercase mb-1">Coverage Scope</div>
-                    <div className="text-white">{selectedReporter.affiliation || "Local Contributor"}</div>
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="text-xs text-gray-500 font-bold uppercase mb-1">Email Address</div>
+                        <div className="text-white select-all">{selectedReporter.email}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 font-bold uppercase mb-1">WhatsApp / Phone</div>
+                        <div className="text-white select-all">{selectedReporter.whatsapp || selectedReporter.phone || "N/A"}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 font-bold uppercase mb-1">District / Coverage</div>
+                        <div className="text-white">{selectedReporter.district || "Odisha"}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 font-bold uppercase mb-1">Coverage Scope</div>
+                        <div className="text-white">{selectedReporter.affiliation || "Local Contributor"}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500 font-bold uppercase mb-1">Blood Group</div>
+                        <div className="text-red-400 font-bold">{(selectedReporter as any).bloodGroup || "O+"}</div>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {selectedReporter.idUrl && (
                   <div className="border-t border-[#1F2937] pt-6 space-y-2">
@@ -1030,12 +1187,13 @@ export default function AdminDashboard() {
               <div className="flex flex-col items-center justify-center bg-[#050810] p-6 rounded-2xl border border-[#1C2438] relative overflow-hidden">
                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Ecosystem Digital Press ID Card</h4>
                 <DigitalPressId 
-                  name={selectedReporter.fullName || "Unnamed Reporter"} 
-                  agency={selectedReporter.organizationName || selectedReporter.agencyName || "SD NEWS HUB"} 
+                  name={isEditingReporter ? editReporterName : (selectedReporter.fullName || "Unnamed Reporter")} 
+                  agency={isEditingReporter ? editReporterAgency : (selectedReporter.organizationName || selectedReporter.agencyName || "SD NEWS HUB")} 
                   role="VERIFIED CONTRIBUTOR"
                   photoUrl={selectedReporter.photoUrl}
                   idNumber={`SDNH-2026-VIP-${(selectedReporter.id || "TEMP").substring(0, 5).toUpperCase()}`}
                   validUntil="DEC 2028"
+                  bloodGroup={isEditingReporter ? editReporterBloodGroup : ((selectedReporter as any).bloodGroup || "O+")}
                 />
               </div>
 
