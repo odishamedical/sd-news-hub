@@ -37,6 +37,8 @@ interface Article {
   reporterName: string;
   status: "pending" | "published" | "rejected";
   createdAt: any;
+  seo_keywords?: string;
+  hashtags?: string;
 }
 
 export default function AdminDashboard() {
@@ -782,7 +784,7 @@ export default function AdminDashboard() {
 
       {/* ARTICLE EDIT MODAL */}
       {editingArticle && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 md:p-6 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 md:p-6 overflow-hidden">
           <div className="bg-[#111827] border border-[#1F2937] rounded-xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
             <div className="bg-[#050810] border-b border-[#1F2937] text-white px-6 py-4 flex items-center justify-between shrink-0">
@@ -815,6 +817,28 @@ export default function AdminDashboard() {
                       onChange={(e) => setEditingArticle({...editingArticle, summary: e.target.value})}
                       className="w-full text-sm font-medium bg-[#050810] border border-[#1F2937] rounded p-2 focus:border-[#C5A059] focus:outline-none text-white"
                     />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">SEO Keywords</label>
+                      <input 
+                        type="text" 
+                        value={editingArticle.seo_keywords || ""}
+                        onChange={(e) => setEditingArticle(prev => prev ? {...prev, seo_keywords: e.target.value} : null)}
+                        placeholder="e.g. politics, odisha, election"
+                        className="w-full text-sm bg-[#050810] border border-[#1F2937] rounded p-2 focus:border-[#C5A059] focus:outline-none text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Taxonomy / Hashtags</label>
+                      <input 
+                        type="text" 
+                        value={editingArticle.hashtags || ""}
+                        onChange={(e) => setEditingArticle(prev => prev ? {...prev, hashtags: e.target.value} : null)}
+                        placeholder="e.g. #OdishaNews #CJP"
+                        className="w-full text-sm bg-[#050810] border border-[#1F2937] rounded p-2 focus:border-[#C5A059] focus:outline-none text-white"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div>

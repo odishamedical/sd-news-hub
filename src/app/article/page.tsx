@@ -5,8 +5,9 @@ import { getAggregateNews, getCustomNews } from "@/lib/news";
 
 export const dynamic = "force-dynamic";
 
-export default async function ArticlePage({ searchParams }: { searchParams: Promise<{ url?: string, title?: string, source?: string, id?: string }> }) {
+export default async function ArticlePage({ searchParams }: { searchParams: Promise<{ url?: string, title?: string, source?: string, id?: string, lang?: string }> }) {
   const resolvedParams = await searchParams;
+  const lang = resolvedParams.lang === 'or' ? 'or' : 'en';
   let articleUrl = resolvedParams.url || "#";
   let title = resolvedParams.title || "News Article";
   let source = resolvedParams.source || "News Source";
@@ -23,9 +24,9 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        title = data.title || title;
+        title = lang === 'or' ? (data.title_or || data.title) : (data.title_en || data.title);
         source = data.reporterName || data.source || "SD News Hub";
-        customContent = data.content || "";
+        customContent = lang === 'or' ? (data.content_or || data.content) : (data.content_en || data.content);
         imageUrl = data.thumbnailBase64 || data.image || "";
       }
     } catch (e) {
@@ -87,7 +88,7 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
             </Link>
           </nav>
           
-          <NewsAuthHeader lang="en" />
+          <NewsAuthHeader lang={lang} />
         </div>
       </header>
 
