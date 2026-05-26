@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getAggregateNews, getCustomNews, NewsItem } from "@/lib/news";
 import NewsAuthHeader from "@/components/NewsAuthHeader";
 import MobileMenu from "@/components/MobileMenu";
+import WhatsAppSubscriberBox from "@/components/WhatsAppSubscriberBox";
 
 // Helper component for displaying a news card
 function NewsCard({ item, featured = false }: { item: NewsItem; featured?: boolean }) {
@@ -218,6 +219,9 @@ export default async function Home({ searchParams }: { searchParams: { lang?: st
                 <button className="bg-[#C5A059] hover:bg-[#b08d4b] text-[#020610] font-bold py-2.5 rounded-xl text-xs transition-all duration-300 shadow-[0_0_15px_rgba(197,160,89,0.15)] uppercase tracking-wider font-mono">Subscribe</button>
               </div>
             </div>
+
+            {/* WhatsApp Subscriber Box */}
+            <WhatsAppSubscriberBox />
 
           </div>
         </div>
