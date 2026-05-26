@@ -89,8 +89,12 @@ export default function RegisterReporter() {
       if (photoFile) finalPhotoUrl = await uploadFile(photoFile, "photos");
       if (idFile) finalIdUrl = await uploadFile(idFile, "ids");
 
+      // Force explicitly pulling the email from storage at the exact moment of submission
+      const currentEmail = localStorage.getItem("sd_current_user_email") || formData.email;
+
       await addDoc(collection(db, "news_reporters"), {
         ...formData,
+        email: currentEmail, // Explicitly enforce email
         photoUrl: finalPhotoUrl,
         idUrl: finalIdUrl,
         status: "pending",
