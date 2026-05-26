@@ -62,9 +62,10 @@ type ReporterStatus = "none" | "pending" | "approved";
 export default function UserDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<{ email: string; name: string } | null>(null);
-  const [reporterStatus, setReporterStatus] = useState<ReporterStatus>("none");
+  const [reporterStatus, setReporterStatus] = useState<ReporterStatus | string>("none");
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [debugError, setDebugError] = useState<string | null>(null);
 
   const getProjectUrl = (baseUrl: string) => {
     if (!user) return baseUrl;
@@ -105,8 +106,13 @@ export default function UserDashboard() {
         return;
       }
 
+      // Add a manual timeout so it doesn't hang forever
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout checking Firebase")), 15000));
+      
       const q = query(collection(db, "news_reporters"), where("email", "==", email));
-      const snapshot = await getDocs(q);
+      const snapshotPromise = getDocs(q);
+
+      const snapshot = await Promise.race([snapshotPromise, timeoutPromise]) as any;
 
       if (!snapshot.empty) {
         const application = snapshot.docs[0].data();
@@ -114,8 +120,9 @@ export default function UserDashboard() {
       } else {
         setReporterStatus("none");
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setDebugError(e.message || "Unknown error connecting to Firebase");
       setReporterStatus("none");
     } finally {
       setLoading(false);
@@ -208,7 +215,14 @@ export default function UserDashboard() {
           <aside className="space-y-6">
 
             {/* Reporter Status Card */}
-            {loading ? (
+            {debugError ? (
+              <div className="bg-red-50 rounded-xl shadow-md border border-red-200 overflow-hidden p-6 flex flex-col items-center justify-center gap-3 text-center">
+                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                <p className="text-red-800 text-sm font-bold">Connection Error</p>
+                <p className="text-red-600 text-xs break-all">{debugError}</p>
+                <button onClick={() => window.location.reload()} className="mt-2 bg-red-100 text-red-700 px-4 py-2 rounded text-xs font-bold">Retry</button>
+              </div>
+            ) : loading ? (
               <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden p-8 flex flex-col items-center justify-center gap-3">
                 <div className="w-8 h-8 border-4 border-[#C5A059] border-t-transparent rounded-full animate-spin"></div>
                 <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider">Checking Status...</p>

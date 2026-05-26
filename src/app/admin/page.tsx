@@ -247,80 +247,20 @@ export default function AdminDashboard() {
                {/* LEFT COLUMN (2/3 width) */}
                <div className="xl:col-span-2 space-y-6">
                   
-                  {/* UNIFIED AI GENERATOR WIDGET */}
-                  <div className="bg-[#111827] border border-[#1F2937] rounded-xl shadow-lg overflow-hidden flex flex-col">
-                     <div className="px-6 py-4 border-b border-[#1F2937] bg-[#111827] flex justify-between items-center">
-                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                          <svg className="w-5 h-5 text-[#C5A059]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                          Unified AI News Studio
-                        </h2>
-                     </div>
-                     <div className="p-6">
-                        <div className="flex flex-col md:flex-row gap-4 mb-4">
-                           <div className="flex-1">
-                              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">News Fact Prompt</label>
-                              <input 
-                                type="text"
-                                value={aiPrompt}
-                                onChange={(e) => setAiPrompt(e.target.value)}
-                                placeholder="e.g. India won the world cup in Barbados..."
-                                className="w-full bg-[#050810] border border-[#1F2937] rounded-lg px-4 py-3 text-sm text-white focus:border-[#C5A059] focus:outline-none focus:ring-1 focus:ring-[#C5A059]"
-                              />
-                           </div>
-                           <div className="w-full md:w-48">
-                              <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Category</label>
-                              <select 
-                                value={aiCategory}
-                                onChange={(e) => setAiCategory(e.target.value)}
-                                className="w-full bg-[#050810] border border-[#1F2937] rounded-lg px-4 py-3 text-sm text-white focus:border-[#C5A059] focus:outline-none"
-                              >
-                                 <option>Politics</option>
-                                 <option>Sports</option>
-                                 <option>Odisha</option>
-                                 <option>Crime</option>
-                                 <option>Business</option>
-                              </select>
-                           </div>
+                  {/* ADVANCED GENERATOR LAUNCHER */}
+                  <div className="bg-gradient-to-br from-[#1C2438] to-[#050810] border border-[#1F2937] hover:border-[#C5A059]/50 rounded-xl shadow-lg overflow-hidden flex flex-col group transition-all duration-300">
+                     <div className="p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5"></div>
+                        <div className="w-16 h-16 bg-gradient-to-br from-[#FFE082] to-[#C5A059] rounded-full flex items-center justify-center mb-4 shadow-lg shadow-[#C5A059]/20 relative z-10 group-hover:scale-110 transition-transform">
+                          <svg className="w-8 h-8 text-[#050810]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99z"/></svg>
                         </div>
-                        <button 
-                          onClick={handleGenerateNews}
-                          disabled={isGenerating || !aiPrompt}
-                          className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:bg-[#1F2937]"
-                        >
-                           {isGenerating ? "Generating All Assets..." : "Generate News & Thumbnail"}
-                        </button>
-
-                        {generatedArticle && (
-                           <div className="mt-6 border-t border-[#1F2937] pt-6 space-y-4 animate-fade-in">
-                              <div className="flex justify-between items-center bg-emerald-500/10 border border-emerald-500/20 px-4 py-3 rounded-lg">
-                                <span className="text-sm font-bold text-emerald-400 flex items-center gap-2">
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                                  Generation Complete
-                                </span>
-                                <button onClick={() => setEditingArticle({...generatedArticle, id: "new", status: "pending", reporterName: "AI Generator"})} className="text-xs bg-[#C5A059] text-[#0A0F1C] px-4 py-2 rounded font-bold hover:bg-[#b08e4d]">Review & Publish</button>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4">
-                                 <div className="bg-[#050810] border border-[#1F2937] rounded-lg p-4">
-                                    <div className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2"><span>🇬🇧</span> English Headline</div>
-                                    <div className="text-sm text-white font-medium">{generatedArticle.title_en}</div>
-                                 </div>
-                                 <div className="bg-[#050810] border border-[#1F2937] rounded-lg p-4">
-                                    <div className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center gap-2"><span>🇮🇳</span> Odia Headline</div>
-                                    <div className="text-sm text-white font-medium">{generatedArticle.title_or}</div>
-                                 </div>
-                                 <div className="col-span-2 bg-[#050810] border border-[#1F2937] rounded-lg p-4 flex gap-4">
-                                    <div className="w-24 h-16 bg-gray-800 rounded shrink-0 overflow-hidden relative">
-                                       <img src={`https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=200&q=80`} className="w-full h-full object-cover opacity-70" alt="mock" />
-                                       <div className="absolute inset-0 flex items-center justify-center text-[8px] font-bold text-white tracking-widest bg-black/40">MOCK IMAGE</div>
-                                    </div>
-                                    <div className="flex-1">
-                                       <div className="text-xs font-bold text-gray-500 uppercase mb-1">Generated Image Prompt</div>
-                                       <div className="text-xs text-gray-300 italic">"{generatedArticle.thumbnail_prompt}"</div>
-                                    </div>
-                                 </div>
-                              </div>
-                           </div>
-                        )}
+                        <h2 className="text-2xl font-black text-white mb-2 relative z-10">Advanced News Creator</h2>
+                        <p className="text-gray-400 text-sm max-w-md mx-auto mb-6 relative z-10">
+                          Launch the full-page studio to generate AI articles with dual English/Odia editors, granular location tagging, and manual SEO overrides.
+                        </p>
+                        <Link href="/admin/generator" className="bg-gradient-to-r from-[#C5A059] to-[#996515] hover:from-[#d4b06a] hover:to-[#a87422] text-[#0A0F1C] font-black px-8 py-3 rounded-lg shadow-xl hover:shadow-[#C5A059]/20 transition-all hover:-translate-y-1 relative z-10 flex items-center gap-2">
+                           Open Studio <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </Link>
                      </div>
                   </div>
 
