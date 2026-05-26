@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Using 1.5-flash for speed and cost efficiency
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Using gemini-2.5-flash for speed and compatibility
 
     const systemInstruction = `You are an expert SEO Journalist for the SD News Hub, covering Odisha news.
 You must return a single, valid JSON object containing an English and an Odia version of the news article.
