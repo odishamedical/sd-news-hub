@@ -871,10 +871,19 @@ export default function AdminDashboard() {
               <div className="flex-1 mt-2">
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Full Article Content</label>
                 <textarea 
-                  rows={12}
                   value={editingArticle.content}
-                  onChange={(e) => setEditingArticle({...editingArticle, content: e.target.value})}
-                  className="w-full text-base font-serif leading-relaxed bg-[#050810] border border-[#1F2937] rounded p-4 focus:border-[#C5A059] focus:outline-none text-white"
+                  onChange={(e) => {
+                    setEditingArticle(prev => prev ? {...prev, content: e.target.value} : null);
+                    e.target.style.height = "auto";
+                    e.target.style.height = e.target.scrollHeight + "px";
+                  }}
+                  ref={(el) => {
+                    if (el) {
+                      el.style.height = "auto";
+                      el.style.height = el.scrollHeight + "px";
+                    }
+                  }}
+                  className="w-full text-base font-serif leading-relaxed bg-[#050810] border border-[#1F2937] rounded p-4 focus:border-[#C5A059] focus:outline-none text-white resize-none overflow-hidden"
                 />
               </div>
             </div>

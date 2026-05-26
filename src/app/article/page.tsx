@@ -24,9 +24,9 @@ export default async function ArticlePage({ searchParams }: { searchParams: Prom
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        title = lang === 'or' ? (data.title_or || data.title) : (data.title_en || data.title);
+        title = lang === 'or' ? (data.titleOdia || data.title_or || data.title) : (data.title_en || data.title);
         source = data.reporterName || data.source || "SD News Hub";
-        customContent = lang === 'or' ? (data.content_or || data.content) : (data.content_en || data.content);
+        customContent = lang === 'or' ? (data.contentOdia || data.content_or || data.content) : (data.content_en || data.content);
         imageUrl = data.thumbnailBase64 || data.image || "";
       }
     } catch (e) {
