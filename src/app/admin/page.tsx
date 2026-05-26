@@ -169,7 +169,7 @@ export default function AdminDashboard() {
   if (!isAdmin) return null;
 
   return (
-    <div className="flex h-screen bg-[#0A0F1C] text-gray-200 overflow-hidden font-sans">
+    <div className="flex h-[calc(100vh-32px)] bg-[#0A0F1C] text-gray-200 overflow-hidden font-sans">
       {/* Sidebar */}
       <aside className="w-64 bg-[#050810] border-r border-[#1C2438] flex flex-col shrink-0">
         <div className="h-16 flex items-center px-6 border-b border-[#1C2438]">
