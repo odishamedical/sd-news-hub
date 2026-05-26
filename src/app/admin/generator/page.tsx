@@ -57,19 +57,40 @@ export default function AdvancedNewsGenerator() {
     if (!prompt) return alert("Please enter a news prompt first!");
     setLoading(true);
     
-    // Simulate Gemini API call for 2 seconds
-    setTimeout(() => {
-      setEngHeadline(`Breaking: Major Development in ${district || state || locationScope} Regarding ${category}`);
-      setOdiaHeadline(`ବ୍ରେକିଂ: ${category} ସମ୍ପର୍କରେ ଏକ ବଡ଼ ଖବର`);
-      setEngContent(`In a significant turn of events today in ${town || district || state}, authorities have announced new measures concerning ${category.toLowerCase()}. ${prompt}\n\nLocal residents have expressed mixed reactions, but officials remain confident that this will yield positive long-term results for the region.`);
-      setOdiaContent(`ଆଜି ${town || district || state} ରେ ଏକ ଗୁରୁତ୍ୱପୂର୍ଣ୍ଣ ଘଟଣାକ୍ରମରେ, ପ୍ରଶାସନ ତରଫରୁ ନୂତନ ପଦକ୍ଷେପ ଗ୍ରହଣ କରାଯାଇଛି। ${prompt} ଏହାକୁ ନେଇ ସ୍ଥାନୀୟ ଲୋକଙ୍କ ମଧ୍ୟରେ ମିଶ୍ରିତ ପ୍ରତିକ୍ରିୟା ଦେଖିବାକୁ ମିଳିଛି।`);
-      
-      setSeoMetaDesc(`Latest news update on ${category} from ${town || district || state}. Read the full story on SD News Hub.`);
-      setSeoKeywords(`${category.toLowerCase()}, ${town || district || state} news, latest update, odisha news, breaking news`);
-      setHashtags(`#${category.replace(/\s+/g, '')} #${state.replace(/\s+/g, '')} #SDNewsHub #BreakingNews`);
-      
+    try {
+      const response = await fetch("/api/generate-news", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+          category,
+          language: "English & Odia",
+          tone: "Professional",
+          includeThumbnail: false
+        })
+      });
+
+      const resData = await response.json();
+      if (resData.success && resData.data) {
+        const aiData = resData.data;
+        setEngHeadline(aiData.title_en || "");
+        setOdiaHeadline(aiData.title_or || "");
+        setEngContent(aiData.content_en || "");
+        setOdiaContent(aiData.content_or || "");
+        setSeoMetaDesc(aiData.summary_en || "");
+        setSeoKeywords(aiData.seo_keywords || "");
+        setHashtags(aiData.hashtags || "");
+      } else {
+        alert(resData.error || "Failed to generate content from AI");
+      }
+    } catch (error: any) {
+      console.error("AI news generation error:", error);
+      alert("Error generating content: " + (error.message || error));
+    } finally {
       setLoading(false);
-    }, 2500);
+    }
   };
 
   const uploadFile = async (file: File): Promise<string> => {
