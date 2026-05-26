@@ -12,7 +12,7 @@ const firebaseConfig = {
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
+const db = getFirestore(app, "default");
 const storage = getStorage(app);
 
 export { app, db, storage, collection, getDocs, addDoc, serverTimestamp, query, orderBy, doc, updateDoc, where, limit };
