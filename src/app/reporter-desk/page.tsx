@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { db, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "@/lib/firebase";
+import { db, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import NewsAuthHeader from "@/components/NewsAuthHeader";
 import ProfileBlockerModal from "@/components/ProfileBlockerModal";
 
@@ -35,6 +36,8 @@ export default function ReporterDesk() {
     content: "",
     thumbnailBase64: ""
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
   const [submitStatus, setSubmitStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
 
   useEffect(() => {
@@ -118,8 +121,11 @@ export default function ReporterDesk() {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
+        setPreviewUrl(reader.result as string); // For local preview only
+        // Temporarily set this for immediate UI feedback, will be overwritten by URL on submit
         setFormData(prev => ({ ...prev, thumbnailBase64: reader.result as string }));
       };
       reader.readAsDataURL(file);
@@ -133,8 +139,21 @@ export default function ReporterDesk() {
     setSubmitStatus("submitting");
 
     try {
+      let finalThumbnailUrl = formData.thumbnailBase64; // Fallback
+
+      // If a new file was selected, upload it to Firebase Storage
+      if (selectedFile) {
+        const fileExtension = selectedFile.name.split('.').pop();
+        const fileName = `news_thumbnails/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExtension}`;
+        const storageRef = ref(storage, fileName);
+        
+        await uploadBytes(storageRef, selectedFile);
+        finalThumbnailUrl = await getDownloadURL(storageRef);
+      }
+
       await addDoc(collection(db, "news_articles"), {
         ...formData,
+        thumbnailBase64: finalThumbnailUrl, // Now saving the permanent URL instead of Base64
         reporterEmail: user.email,
         reporterName: user.name,
         status: "pending",
@@ -143,6 +162,8 @@ export default function ReporterDesk() {
       
       setSubmitStatus("success");
       setFormData({ title: "", category: "", summary: "", content: "", thumbnailBase64: "" });
+      setSelectedFile(null);
+      setPreviewUrl("");
       fetchMyArticles(user.email);
       
       setTimeout(() => {
