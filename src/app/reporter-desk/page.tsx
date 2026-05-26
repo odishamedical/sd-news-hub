@@ -7,6 +7,7 @@ import { db, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import NewsAuthHeader from "@/components/NewsAuthHeader";
 import ProfileBlockerModal from "@/components/ProfileBlockerModal";
+import DigitalPressId from "@/components/DigitalPressId";
 
 type Article = {
   id: string;
@@ -422,23 +423,15 @@ export default function ReporterDesk() {
               </div>
             </div>
 
-            {/* Digital ID Placeholder */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
-              <div className="bg-gradient-to-br from-[#0B2B26] to-[#1a4a40] p-6 text-center text-white relative z-10">
-                <div className="absolute top-2 right-2 opacity-20">
-                  <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99z"/></svg>
-                </div>
-                <h3 className="font-black tracking-widest uppercase text-sm text-[#C5A059] mb-1">SD News Hub</h3>
-                <h4 className="font-bold text-[10px] uppercase tracking-wider opacity-70 mb-4">Press Credential</h4>
-                <div className="w-20 h-20 bg-white/10 rounded-full mx-auto border-2 border-[#C5A059] flex items-center justify-center mb-3">
-                  <span className="text-3xl">👤</span>
-                </div>
-                <h2 className="font-serif font-bold text-lg">{user?.name}</h2>
-                <p className="text-xs opacity-70 uppercase tracking-widest mt-1">ID: SDNH-PENDING</p>
-              </div>
-              <div className="bg-gray-50 p-4 border-t border-gray-200 text-center">
-                <p className="text-xs text-gray-500 font-medium">Digital ID functionality unlocking in Phase 3.</p>
-              </div>
+            {/* Digital Press ID Mockup */}
+            <div className="mb-6">
+              <h3 className="font-black text-[#0B2B26] uppercase tracking-wider text-sm mb-4">Official Press ID</h3>
+              <DigitalPressId 
+                name={user?.name || "REPORTER"} 
+                agency="SD NEWS HUB"
+                role="VERIFIED CONTRIBUTOR"
+                idNumber="SDNH-2026-VIP"
+              />
             </div>
 
             {/* Guidelines */}

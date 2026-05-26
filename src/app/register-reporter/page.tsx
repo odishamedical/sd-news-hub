@@ -2,76 +2,48 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { db, collection, addDoc, serverTimestamp } from "@/lib/firebase";
+import { db, collection, addDoc, serverTimestamp, storage } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import NewsAuthHeader from "@/components/NewsAuthHeader";
-import ProfileBlockerModal from "@/components/ProfileBlockerModal";
 
 export default function RegisterReporter() {
   const [step, setStep] = useState(1);
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showProfileBlocker, setShowProfileBlocker] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
+  // Auth Checks
+  const [userEmail, setUserEmail] = useState("");
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      setIsAdmin(localStorage.getItem("sd_current_user_role") === "super_admin");
-      
-      const userEmail = localStorage.getItem("sd_current_user_email");
-      const isProfileComplete = localStorage.getItem("sd_current_user_profile_complete") === "true";
-      if (userEmail && !isProfileComplete) {
-        setShowProfileBlocker(true);
-      }
+      const email = localStorage.getItem("sd_current_user_email") || "";
+      setUserEmail(email);
+      setFormData(prev => ({ ...prev, email }));
     }
   }, []);
 
   const [formData, setFormData] = useState({
-    // Step 1
+    // Step 1: Personal
     fullName: "",
-    organizationName: "",
-    type: "Reporter",
     email: "",
     phone: "",
     whatsapp: "",
-    country: "India",
-    state: "",
+    state: "Odisha",
     district: "",
     address: "",
-    passportPhotoBase64: "",
-    // Step 2
-    adharVoterBase64: "",
-    otherIdBase64: "",
+    // Step 2: Agency
+    organizationName: "",
     affiliation: "",
-    experience: "",
-    portfolio: "",
-    facebook: "",
-    instagram: "",
-    youtube: "",
-    website: "",
-    // Step 3
     preferredLanguage: "English & Odia",
-    coverageArea: "Odisha State",
     categories: [] as string[],
-    customCategory: "",
-    // Step 4
-    agreementOriginal: false,
-    agreementTerms: false
+    // Step 3: Files
+    photoUrl: "",
+    idUrl: ""
   });
 
-  const indianStates = [
-    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", 
-    "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", 
-    "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", 
-    "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", 
-    "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
-  ];
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [idFile, setIdFile] = useState<File | null>(null);
 
-  // For demonstration, a simple district list for Odisha. In a full app, this would be dynamic based on the state.
-  const odishaDistricts = [
-    "Angul", "Balangir", "Balasore", "Bargarh", "Bhadrak", "Boudh", "Cuttack", "Deogarh", "Dhenkanal", "Gajapati", 
-    "Ganjam", "Jagatsinghapur", "Jajpur", "Jharsuguda", "Kalahandi", "Kandhamal", "Kendrapara", "Kendujhar", "Khordha", 
-    "Koraput", "Malkangiri", "Mayurbhanj", "Nabarangpur", "Nayagarh", "Nuapada", "Puri", "Rayagada", "Sambalpur", 
-    "Subarnapur", "Sundargarh"
-  ];
+  const categoriesList = ["Politics", "Crime", "Business", "Entertainment", "Sports", "Odisha"];
 
   const handleCategoryToggle = (cat: string) => {
     setFormData(prev => ({
@@ -82,511 +54,228 @@ export default function RegisterReporter() {
     }));
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, passportPhotoBase64: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
+  const uploadFile = async (file: File, folder: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const fileRef = ref(storage, `reporters/${folder}/${Date.now()}_${file.name}`);
+      const task = uploadBytesResumable(fileRef, file);
+      
+      task.on("state_changed", 
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+        },
+        (error) => reject(error),
+        async () => {
+          const url = await getDownloadURL(task.snapshot.ref);
+          resolve(url);
+        }
+      );
+    });
   };
-
-  const handleAdharUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, adharVoterBase64: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleOtherIdUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, otherIdBase64: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
-  const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (step < 3) {
+      setStep(step + 1);
+      return;
+    }
+
     setStatus("submitting");
 
     try {
+      let finalPhotoUrl = "";
+      let finalIdUrl = "";
+
+      if (photoFile) finalPhotoUrl = await uploadFile(photoFile, "photos");
+      if (idFile) finalIdUrl = await uploadFile(idFile, "ids");
+
       await addDoc(collection(db, "news_reporters"), {
         ...formData,
+        photoUrl: finalPhotoUrl,
+        idUrl: finalIdUrl,
         status: "pending",
         createdAt: serverTimestamp()
       });
       setStatus("success");
     } catch (error) {
-      console.error("Error submitting registration:", error);
+      console.error("Registration failed:", error);
       setStatus("error");
     }
   };
 
-  if (showProfileBlocker) {
-    return (
-      <div className="min-h-screen bg-[#F4F1EA] flex flex-col">
-        <header className="bg-[#0B2B26] text-white">
-          <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded">
-                <span className="text-[#C5A059] font-bold text-sm">NP</span>
-              </div>
-              <h1 className="text-xl font-bold tracking-wider text-white">SD NEWS HUB</h1>
-            </Link>
-            <NewsAuthHeader lang="en" />
-          </div>
-        </header>
-        <ProfileBlockerModal onClose={() => window.location.href = "/"} />
-      </div>
-    );
-  }
-
   if (status === "success") {
     return (
-      <div className="min-h-screen bg-[#F4F1EA] flex flex-col">
-        {/* Primary Header */}
-        <header className="bg-[#0B2B26] text-white">
-          <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded">
-                <span className="text-[#C5A059] font-bold text-sm">NP</span>
-              </div>
-              <h1 className="text-xl font-bold tracking-wider text-white">SD NEWS HUB</h1>
-            </Link>
-            <nav className="hidden md:flex gap-8 text-sm font-semibold">
-              <Link href="/" className="hover:text-[#C5A059] transition-colors py-5">Home</Link>
-              <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Odisha</Link>
-              <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Politics</Link>
-              <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Business</Link>
-            </nav>
-            <NewsAuthHeader lang="en" />
-          </div>
-        </header>
-
-        <div className="flex-1 flex items-center justify-center p-6 text-center">
-          <div className="bg-white p-10 rounded-xl shadow-xl max-w-lg w-full border-t-4 border-[#C5A059]">
-            <div className="w-20 h-20 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+      <div className="min-h-screen bg-[#0A0F1C] flex flex-col items-center justify-center p-6 font-sans">
+         <div className="max-w-md w-full bg-[#050810] border border-[#1C2438] p-10 rounded-2xl text-center shadow-2xl">
+            <div className="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6">
               <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
             </div>
-            <h2 className="text-3xl font-black font-serif mb-4 text-[#0A1C16]">Application Received</h2>
-            <p className="text-gray-600 mb-8 text-sm leading-relaxed">
-              Thank you, {formData.fullName}. Your professional profile has been submitted securely. Our editorial team will review your application and generate your Digital ID Card upon approval.
+            <h2 className="text-2xl font-black text-white mb-3">Application Received</h2>
+            <p className="text-gray-400 text-sm mb-8">
+              Thank you, {formData.fullName}. Your application and documents have been uploaded to our secure servers. We will review it shortly.
             </p>
-            <Link href="/" className="bg-[#0B2B26] hover:bg-[#051815] text-[#C5A059] font-bold py-4 px-6 rounded w-full block transition-colors shadow-lg hover:shadow-xl">
+            <Link href="/" className="bg-[#C5A059] text-[#0A0F1C] font-black py-3 px-6 rounded-lg w-full block transition-transform hover:-translate-y-1">
               Return to News Hub
             </Link>
-          </div>
-        </div>
+         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] flex flex-col">
-      {/* Exact Primary Header from page.tsx */}
-      <header className="bg-[#0B2B26] text-white">
-        <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <div className="w-8 h-8 border-2 border-[#C5A059] flex items-center justify-center rounded">
-              <span className="text-[#C5A059] font-bold text-sm">NP</span>
-            </div>
-            <h1 className="text-xl font-bold tracking-wider text-white">SD NEWS HUB</h1>
+    <div className="min-h-screen bg-[#0A0F1C] flex flex-col font-sans">
+      <header className="bg-[#050810] border-b border-[#1C2438] text-white">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-[#C5A059] flex items-center justify-center rounded font-bold text-[#0A0F1C]">SD</div>
+            <h1 className="text-lg font-bold tracking-wider">News Hub</h1>
           </Link>
-          
-          <nav className="hidden md:flex gap-8 text-sm font-semibold">
-            <Link href="/" className="hover:text-[#C5A059] transition-colors py-5">Home</Link>
-            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Odisha</Link>
-            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Politics</Link>
-            <Link href="#" className="hover:text-[#C5A059] transition-colors py-5">Business</Link>
-          </nav>
-          
           <NewsAuthHeader lang="en" />
         </div>
       </header>
 
-      <main className="flex-1 max-w-3xl mx-auto w-full py-12 px-4 sm:px-6">
-        <div className="text-center mb-10">
-          <h1 className="text-3xl sm:text-4xl font-black font-serif text-[#0B2B26] mb-4">Official Contributor Application</h1>
-          <p className="text-gray-600 max-w-xl mx-auto">Complete this 4-step professional verification to receive your Digital ID Card and publish directly to the SD News Hub.</p>
+      <main className="flex-1 max-w-3xl w-full mx-auto p-6 md:p-12">
+        
+        {/* Progress Bar */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between relative z-10">
+            {[1, 2, 3].map((num) => (
+              <div key={num} className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all ${
+                step >= num ? 'bg-[#C5A059] text-[#0A0F1C] shadow-lg shadow-[#C5A059]/50' : 'bg-[#1C2438] text-gray-500'
+              }`}>
+                {num}
+              </div>
+            ))}
+          </div>
+          <div className="h-1 bg-[#1C2438] -mt-5 relative z-0">
+             <div className="h-full bg-[#C5A059] transition-all duration-500 ease-out" style={{ width: `${((step - 1) / 2) * 100}%` }}></div>
+          </div>
+          <div className="flex justify-between mt-4 text-xs font-bold uppercase tracking-wider text-gray-400">
+            <span className={step >= 1 ? "text-[#C5A059]" : ""}>Personal</span>
+            <span className={step >= 2 ? "text-[#C5A059]" : ""}>Agency</span>
+            <span className={step >= 3 ? "text-[#C5A059]" : ""}>Documents</span>
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+        <form onSubmit={handleSubmit} className="bg-[#050810] border border-[#1C2438] rounded-2xl p-8 shadow-xl">
           
-          {/* Progress Bar Header */}
-          <div className="bg-gray-50 border-b border-gray-200 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-sm font-bold text-[#0B2B26] uppercase tracking-wider">
-              Step {step} of 4: 
-              {step === 1 && " Personal Details"}
-              {step === 2 && " Credentials"}
-              {step === 3 && " Preferences"}
-              {step === 4 && " Compliance"}
-            </div>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4].map(s => (
-                <div key={s} className={`h-2 w-12 rounded-full transition-colors ${step >= s ? 'bg-[#C5A059]' : 'bg-gray-300'}`}></div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-8">
-            <form onSubmit={step === 4 ? handleSubmit : (e) => { e.preventDefault(); nextStep(); }}>
-              
-              {/* STEP 1 */}
-              {step === 1 && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Full Name <span className="text-red-500">*</span></label>
-                      <input required type="text" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="e.g. Shyam Dash" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Organization Name <span className="text-gray-400 font-normal ml-1">(If applicable)</span></label>
-                      <input type="text" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.organizationName} onChange={e => setFormData({...formData, organizationName: e.target.value})} placeholder="e.g. Odisha Daily" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Applicant Type <span className="text-red-500">*</span></label>
-                      <select required className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
-                        <option>Reporter</option>
-                        <option>Freelancer</option>
-                        <option>Newspaper</option>
-                        <option>TV / YouTube Channel</option>
-                        <option>News Website</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Contact Email <span className="text-red-500">*</span></label>
-                      <input required type="email" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="you@example.com" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Phone Number <span className="text-red-500">*</span></label>
-                      <input required type="tel" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+91..." />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">WhatsApp Number</label>
-                      <input type="tel" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} placeholder="+91..." />
-                    </div>
-                  </div>
-
-                  {/* Location Dropdowns */}
-                  <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
-                    <h3 className="font-bold text-[#0B2B26] border-b border-gray-200 pb-2 mb-4">Location Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-bold text-[#0A1C16] mb-2">Country <span className="text-red-500">*</span></label>
-                        <select className="w-full bg-white border border-gray-200 rounded px-3 py-2 focus:outline-none focus:border-[#C5A059]" value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})}>
-                          <option>India</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-[#0A1C16] mb-2">State <span className="text-red-500">*</span></label>
-                        <select required className="w-full bg-white border border-gray-200 rounded px-3 py-2 focus:outline-none focus:border-[#C5A059]" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value, district: ""})}>
-                          <option value="">Select State</option>
-                          {indianStates.map(state => (
-                            <option key={state} value={state}>{state}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-bold text-[#0A1C16] mb-2">District / City <span className="text-red-500">*</span></label>
-                        {formData.state === "Odisha" ? (
-                           <select required className="w-full bg-white border border-gray-200 rounded px-3 py-2 focus:outline-none focus:border-[#C5A059]" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})}>
-                             <option value="">Select District</option>
-                             {odishaDistricts.map(dist => (
-                               <option key={dist} value={dist}>{dist}</option>
-                             ))}
-                           </select>
-                        ) : (
-                          <input required type="text" className="w-full bg-white border border-gray-200 rounded px-3 py-2 focus:outline-none focus:border-[#C5A059]" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} placeholder="Enter District/City" />
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Detailed Address <span className="text-red-500">*</span></label>
-                      <input required type="text" className="w-full bg-white border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Street, landmark, PIN code" />
-                    </div>
-                  </div>
-
-                  {/* Active Photo Upload */}
-                  <div>
-                    <label className="block text-sm font-bold text-[#0A1C16] mb-2">Passport Size Photo (For ID Card) <span className="text-red-500">*</span></label>
-                    <div className="border-2 border-dashed border-[#C5A059] rounded-lg bg-yellow-50/30 p-6 flex flex-col items-center justify-center transition-colors hover:bg-yellow-50 relative overflow-hidden group">
-                      {formData.passportPhotoBase64 ? (
-                         <div className="flex flex-col items-center">
-                           <img src={formData.passportPhotoBase64} alt="Passport Preview" className="w-32 h-32 object-cover rounded-full border-4 border-white shadow-md mb-3" />
-                           <span className="text-sm text-green-600 font-bold flex items-center gap-1"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Photo Captured</span>
-                           <span className="text-xs text-gray-500 mt-1 cursor-pointer hover:underline">Click below to retake</span>
-                         </div>
-                      ) : (
-                        <>
-                          <div className="bg-[#0B2B26] text-[#C5A059] p-3 rounded-full mb-3 shadow-sm group-hover:scale-110 transition-transform">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                          </div>
-                          <span className="text-sm font-bold text-[#0B2B26]">Take Photo or Upload</span>
-                          <span className="text-xs text-gray-500 mt-1 text-center max-w-xs">Face the camera directly in good lighting. This will be used for your Digital Press ID.</span>
-                        </>
-                      )}
-                      
-                      <input 
-                        required={!formData.passportPhotoBase64}
-                        type="file" 
-                        accept="image/*" 
-                        capture="user"
-                        onChange={handlePhotoUpload}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        title="Take a photo or upload"
-                      />
-                    </div>
-                  </div>
-
+          {step === 1 && (
+            <div className="space-y-6 animate-fade-in">
+              <h2 className="text-xl font-black text-white mb-6">Personal Details</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Full Legal Name *</label>
+                  <input required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="w-full bg-[#0A0F1C] border border-[#1C2438] rounded-lg px-4 py-3 text-white focus:border-[#C5A059] focus:outline-none" />
                 </div>
-              )}
-
-              {/* STEP 2 */}
-              {step === 2 && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Adhar / Voter Card (Front) <span className="text-red-500">*</span></label>
-                      <div className="border-2 border-dashed border-[#C5A059] rounded-lg bg-yellow-50/30 p-6 flex flex-col items-center justify-center transition-colors hover:bg-yellow-50 relative overflow-hidden group h-40">
-                        {formData.adharVoterBase64 ? (
-                           <div className="flex flex-col items-center">
-                             <img src={formData.adharVoterBase64} alt="Adhar Preview" className="h-20 object-contain rounded border-2 border-white shadow-md mb-2 bg-white" />
-                             <span className="text-xs text-green-600 font-bold flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Uploaded</span>
-                           </div>
-                        ) : (
-                          <>
-                            <div className="bg-[#0B2B26] text-[#C5A059] p-2 rounded-full mb-2 shadow-sm group-hover:scale-110 transition-transform">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4-4m-4 4l-4-4"></path></svg>
-                            </div>
-                            <span className="text-sm font-bold text-[#0B2B26]">Upload Govt ID</span>
-                          </>
-                        )}
-                        <input required={!formData.adharVoterBase64} type="file" accept="image/*,.pdf" onChange={handleAdharUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title="Upload Adhar or Voter ID" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Press ID / Other Document <span className="text-gray-400 font-normal ml-1">(Optional)</span></label>
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 p-6 flex flex-col items-center justify-center transition-colors hover:bg-gray-100 relative overflow-hidden group h-40">
-                        {formData.otherIdBase64 ? (
-                           <div className="flex flex-col items-center">
-                             <img src={formData.otherIdBase64} alt="Other ID Preview" className="h-20 object-contain rounded border-2 border-white shadow-md mb-2 bg-white" />
-                             <span className="text-xs text-green-600 font-bold flex items-center gap-1"><svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg> Uploaded</span>
-                           </div>
-                        ) : (
-                          <>
-                            <div className="bg-gray-200 text-gray-500 p-2 rounded-full mb-2 shadow-sm group-hover:scale-110 transition-transform">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v11m0 5l4-4m-4 4l-4-4"></path></svg>
-                            </div>
-                            <span className="text-sm font-bold text-gray-600">Upload Other ID</span>
-                          </>
-                        )}
-                        <input type="file" accept="image/*,.pdf" onChange={handleOtherIdUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" title="Upload Secondary ID" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Affiliation (if any)</label>
-                      <input type="text" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.affiliation} onChange={e => setFormData({...formData, affiliation: e.target.value})} placeholder="News Agency Name..." />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Years of Experience <span className="text-red-500">*</span></label>
-                      <input required type="number" min="0" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.experience} onChange={e => setFormData({...formData, experience: e.target.value})} placeholder="e.g. 5" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Facebook Profile / Page</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-3.5 text-gray-400">
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                        </span>
-                        <input type="url" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 pl-10 focus:outline-none focus:border-[#C5A059]" value={formData.facebook} onChange={e => setFormData({...formData, facebook: e.target.value})} placeholder="https://facebook.com/..." />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Instagram Profile</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-3.5 text-gray-400">
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                        </span>
-                        <input type="url" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 pl-10 focus:outline-none focus:border-[#C5A059]" value={formData.instagram} onChange={e => setFormData({...formData, instagram: e.target.value})} placeholder="https://instagram.com/..." />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">YouTube Channel</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-3.5 text-gray-400">
-                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                        </span>
-                        <input type="url" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 pl-10 focus:outline-none focus:border-[#C5A059]" value={formData.youtube} onChange={e => setFormData({...formData, youtube: e.target.value})} placeholder="https://youtube.com/..." />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Website / Blog</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-3.5 text-gray-400">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
-                        </span>
-                        <input type="url" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 pl-10 focus:outline-none focus:border-[#C5A059]" value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})} placeholder="https://..." />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-[#0A1C16] mb-2">Portfolio / Sample Work Links</label>
-                    <textarea rows={3} className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.portfolio} onChange={e => setFormData({...formData, portfolio: e.target.value})} placeholder="Paste YouTube links, article links, or website URLs here..."></textarea>
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Email Address *</label>
+                  <input readOnly value={formData.email} className="w-full bg-[#0A0F1C] border border-[#1C2438] rounded-lg px-4 py-3 text-gray-500 cursor-not-allowed" />
                 </div>
-              )}
-
-              {/* STEP 3 */}
-              {step === 3 && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Preferred Language(s) <span className="text-red-500">*</span></label>
-                      <select required className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.preferredLanguage} onChange={e => setFormData({...formData, preferredLanguage: e.target.value})}>
-                        <option>Odia Only</option>
-                        <option>English Only</option>
-                        <option>Hindi Only</option>
-                        <option>English & Odia</option>
-                        <option>Multilingual</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Coverage Area <span className="text-red-500">*</span></label>
-                      <select required className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.coverageArea} onChange={e => setFormData({...formData, coverageArea: e.target.value})}>
-                        <option>District Level</option>
-                        <option>State Level (Odisha)</option>
-                        <option>National Level</option>
-                        <option>International</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-[#0A1C16] mb-3">Preferred News Categories <span className="text-red-500">*</span></label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {['Politics', 'Sports', 'Business', 'Entertainment', 'Education', 'Health', 'Crime', 'Tech', 'Investigation'].map(cat => (
-                        <label key={cat} className={`flex items-center gap-3 p-3 border rounded cursor-pointer transition-colors ${formData.categories.includes(cat) ? 'bg-[#0B2B26] text-white border-[#0B2B26]' : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'}`}>
-                          <input type="checkbox" className="hidden" checked={formData.categories.includes(cat)} onChange={() => handleCategoryToggle(cat)} />
-                          <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${formData.categories.includes(cat) ? 'border-white bg-[#C5A059]' : 'border-gray-400 bg-white'}`}>
-                            {formData.categories.includes(cat) && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
-                          </div>
-                          <span className="font-bold text-sm">{cat}</span>
-                        </label>
-                      ))}
-                    </div>
-                    
-                    <div className="mt-4">
-                      <label className="block text-sm font-bold text-[#0A1C16] mb-2">Other Category (Custom)</label>
-                      <input type="text" className="w-full bg-gray-50 border border-gray-200 rounded px-4 py-3 focus:outline-none focus:border-[#C5A059]" value={formData.customCategory} onChange={e => setFormData({...formData, customCategory: e.target.value})} placeholder="Type custom category if not listed above..." />
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Phone Number *</label>
+                  <input required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-[#0A0F1C] border border-[#1C2438] rounded-lg px-4 py-3 text-white focus:border-[#C5A059] focus:outline-none" />
                 </div>
-              )}
-
-              {/* STEP 4 */}
-              {step === 4 && (
-                <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                  <div className="bg-orange-50 border border-orange-200 p-6 rounded-xl">
-                    <h3 className="font-bold font-serif text-lg text-orange-900 mb-2">Compliance & Agreement</h3>
-                    <p className="text-sm text-orange-800 mb-6">By submitting this application, you are requesting official verification within the SD News Hub Ecosystem. Please read and agree to the following terms.</p>
-                    
-                    <div className="space-y-4">
-                      <label className="flex items-start gap-4 cursor-pointer">
-                        <div className="mt-1">
-                          <input required type="checkbox" className="w-5 h-5 text-[#C5A059] focus:ring-[#C5A059] rounded border-gray-300" checked={formData.agreementOriginal} onChange={e => setFormData({...formData, agreementOriginal: e.target.checked})} />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[#0A1C16] block">Originality Declaration</span>
-                          <span className="text-sm text-gray-600 block mt-1">I confirm that all news submitted by me is original, factually verified, or properly attributed to the original source. Plagiarism is strictly prohibited.</span>
-                        </div>
-                      </label>
-
-                      <label className="flex items-start gap-4 cursor-pointer">
-                        <div className="mt-1">
-                          <input required type="checkbox" className="w-5 h-5 text-[#C5A059] focus:ring-[#C5A059] rounded border-gray-300" checked={formData.agreementTerms} onChange={e => setFormData({...formData, agreementTerms: e.target.checked})} />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[#0A1C16] block">Terms & Conditions Consent</span>
-                          <span className="text-sm text-gray-600 block mt-1">I grant SD News Hub editorial rights to review, fact-check, and distribute my submissions. I agree to comply with all media broadcasting laws and SD Ecosystem guidelines.</span>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
-                  {status === "error" && (
-                    <div className="bg-red-50 text-red-600 p-4 rounded text-sm font-semibold border border-red-200">
-                      There was an error connecting to the database. Please try again.
-                    </div>
-                  )}
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">WhatsApp Number</label>
+                  <input value={formData.whatsapp} onChange={e => setFormData({...formData, whatsapp: e.target.value})} className="w-full bg-[#0A0F1C] border border-[#1C2438] rounded-lg px-4 py-3 text-white focus:border-[#C5A059] focus:outline-none" />
                 </div>
-              )}
-
-              {/* Navigation Buttons */}
-              <div className="mt-10 pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="flex gap-4 order-2 sm:order-1">
-                  {step > 1 ? (
-                    <button type="button" onClick={prevStep} className="px-6 py-3 border border-gray-300 text-gray-700 font-bold rounded hover:bg-gray-50 transition-colors">
-                      Back
-                    </button>
-                  ) : <div className="hidden sm:block"></div>}
-                  
-                  {isAdmin && step < 4 && (
-                    <button type="button" onClick={nextStep} className="px-4 py-3 bg-red-100 text-red-700 font-bold rounded hover:bg-red-200 transition-colors text-sm">
-                      Admin Skip ⚡
-                    </button>
-                  )}
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">State / District *</label>
+                  <input required value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} placeholder="e.g. Khordha" className="w-full bg-[#0A0F1C] border border-[#1C2438] rounded-lg px-4 py-3 text-white focus:border-[#C5A059] focus:outline-none" />
                 </div>
-
-                <div className="order-1 sm:order-2 w-full sm:w-auto">
-                  {step < 4 ? (
-                    <button type="submit" className="w-full sm:w-auto px-8 py-3 bg-[#0B2B26] hover:bg-[#051815] text-[#C5A059] font-bold rounded transition-colors shadow-md">
-                      Continue to Step {step + 1}
-                    </button>
-                  ) : (
-                    <button type="submit" disabled={status === "submitting"} className="w-full sm:w-auto px-10 py-3 bg-[#C5A059] hover:bg-[#b08d4b] text-[#0A1C16] font-black rounded transition-colors shadow-lg disabled:opacity-70 flex items-center justify-center gap-2">
-                      {status === "submitting" ? (
-                        <><span className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#0A1C16]"></span> Processing...</>
-                      ) : (
-                        "Submit Application"
-                      )}
-                    </button>
-                  )}
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Full Address *</label>
+                  <textarea required value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} rows={2} className="w-full bg-[#0A0F1C] border border-[#1C2438] rounded-lg px-4 py-3 text-white focus:border-[#C5A059] focus:outline-none" />
                 </div>
               </div>
+            </div>
+          )}
 
-            </form>
+          {step === 2 && (
+            <div className="space-y-6 animate-fade-in">
+              <h2 className="text-xl font-black text-white mb-6">Media & Coverage</h2>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-2">News Agency / Publication Name *</label>
+                  <input required value={formData.organizationName} onChange={e => setFormData({...formData, organizationName: e.target.value})} placeholder="e.g. Independent Reporter" className="w-full bg-[#0A0F1C] border border-[#1C2438] rounded-lg px-4 py-3 text-white focus:border-[#C5A059] focus:outline-none" />
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-3">Coverage Categories *</label>
+                  <div className="flex flex-wrap gap-3">
+                    {categoriesList.map(cat => (
+                      <button 
+                        type="button" 
+                        key={cat} 
+                        onClick={() => handleCategoryToggle(cat)}
+                        className={`px-4 py-2 rounded-full text-xs font-bold border transition-colors ${formData.categories.includes(cat) ? 'bg-[#C5A059] text-[#0A0F1C] border-[#C5A059]' : 'bg-[#0A0F1C] text-gray-400 border-[#1C2438] hover:border-gray-500'}`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-6 animate-fade-in">
+              <h2 className="text-xl font-black text-white mb-6">Identity Verification</h2>
+              
+              <div className="bg-[#0A0F1C] border border-[#1C2438] rounded-xl p-6">
+                 <div className="flex items-center gap-6">
+                    <div className="w-24 h-24 bg-[#1C2438] rounded-full overflow-hidden border-2 border-[#C5A059]/30 flex items-center justify-center shrink-0 relative group">
+                       {photoFile ? (
+                         <img src={URL.createObjectURL(photoFile)} alt="Preview" className="w-full h-full object-cover" />
+                       ) : (
+                         <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                       )}
+                       <input required type="file" accept="image/*" onChange={(e) => setPhotoFile(e.target.files?.[0] || null)} className="absolute inset-0 opacity-0 cursor-pointer" />
+                    </div>
+                    <div>
+                       <h3 className="font-bold text-white mb-1">Professional Photo *</h3>
+                       <p className="text-xs text-gray-500 mb-3">This will appear on your Digital Press ID Card. Please upload a clear headshot.</p>
+                       <label className="text-xs font-bold text-[#C5A059] border border-[#C5A059] px-4 py-2 rounded hover:bg-[#C5A059]/10 cursor-pointer inline-block">
+                          Choose Photo
+                          <input required type="file" accept="image/*" onChange={(e) => setPhotoFile(e.target.files?.[0] || null)} className="hidden" />
+                       </label>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="bg-[#0A0F1C] border border-[#1C2438] rounded-xl p-6">
+                 <h3 className="font-bold text-white mb-1">Government ID (Aadhar/Voter) *</h3>
+                 <p className="text-xs text-gray-500 mb-4">Required for official media accreditation and verification.</p>
+                 
+                 <label className="border-2 border-dashed border-[#1C2438] hover:border-[#C5A059] rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-colors bg-[#050810]">
+                    <svg className="w-10 h-10 text-gray-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <span className="text-sm font-bold text-gray-300">Click to upload ID Document</span>
+                    <span className="text-xs text-gray-500 mt-1">{idFile ? idFile.name : 'JPG, PNG or PDF (Max 5MB)'}</span>
+                    <input required type="file" accept="image/*,.pdf" onChange={(e) => setIdFile(e.target.files?.[0] || null)} className="hidden" />
+                 </label>
+              </div>
+
+              {status === "submitting" && (
+                <div className="w-full bg-[#1C2438] rounded-full h-2 mt-4 overflow-hidden">
+                  <div className="bg-[#C5A059] h-2 transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-10 flex gap-4 pt-6 border-t border-[#1C2438]">
+             {step > 1 && (
+               <button type="button" onClick={() => setStep(step - 1)} className="px-6 py-3 rounded-lg font-bold text-gray-400 bg-[#1C2438] hover:bg-[#2A344A] transition-colors">
+                 Back
+               </button>
+             )}
+             <button type="submit" disabled={status === "submitting"} className="flex-1 bg-gradient-to-r from-[#C5A059] to-[#996515] hover:from-[#d4b06a] hover:to-[#a87422] text-[#0A0F1C] font-black py-3 rounded-lg transition-transform hover:-translate-y-1 disabled:opacity-50 disabled:transform-none">
+               {status === "submitting" ? "Uploading Securely..." : step === 3 ? "Submit Application" : "Continue"}
+             </button>
           </div>
-        </div>
+
+        </form>
       </main>
     </div>
   );
