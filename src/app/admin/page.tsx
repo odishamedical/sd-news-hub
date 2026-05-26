@@ -34,7 +34,7 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  const [activeTab, setActiveTab] = useState<"reporters" | "articles">("reporters");
+  const [activeTab, setActiveTab] = useState<"reporters" | "articles" | "ai_studio">("reporters");
   
   const [reporters, setReporters] = useState<Reporter[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
@@ -42,6 +42,42 @@ export default function AdminDashboard() {
   // Modal State for Article Editing
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // AI Studio State
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiCategory, setAiCategory] = useState("Politics");
+  const [aiLanguage, setAiLanguage] = useState("English + Odia");
+  const [aiTone, setAiTone] = useState("Professional");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedArticle, setGeneratedArticle] = useState<any>(null);
+
+  const handleGenerateNews = async () => {
+    if (!aiPrompt) return alert("Please enter a prompt");
+    setIsGenerating(true);
+    try {
+      const res = await fetch("/api/generate-news", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: aiPrompt,
+          category: aiCategory,
+          language: aiLanguage,
+          tone: aiTone
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setGeneratedArticle(data.data);
+      } else {
+        alert(data.error || "Failed to generate news");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error calling AI API");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Auth Guard
   useEffect(() => {
@@ -175,6 +211,13 @@ export default function AdminDashboard() {
                 </span>
               )}
             </button>
+            <button 
+              onClick={() => setActiveTab("ai_studio")}
+              className={`px-6 py-2 rounded-md text-sm font-bold transition-colors flex items-center gap-2 ${activeTab === "ai_studio" ? "bg-[#C5A059] text-white" : "text-[#C5A059] hover:bg-amber-50"}`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+              AI Studio
+            </button>
           </div>
         </div>
 
@@ -297,6 +340,170 @@ export default function AdminDashboard() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            )}
+
+            {/* AI STUDIO TAB */}
+            {activeTab === "ai_studio" && (
+              <div className="p-6 md:p-10 flex flex-col lg:flex-row gap-10 bg-white">
+                
+                {/* Left Side: Generator Controls */}
+                <div className="lg:w-1/3 flex flex-col gap-6">
+                  <div>
+                    <h2 className="text-2xl font-black font-serif text-[#0B2B26] flex items-center gap-2 mb-2">
+                      <svg className="w-6 h-6 text-[#C5A059]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                      AI Content Studio
+                    </h2>
+                    <p className="text-sm text-gray-500 leading-relaxed">Turn bullet points into SEO-optimized, dual-language news articles instantly.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">News Prompt / Facts</label>
+                      <textarea 
+                        rows={4}
+                        placeholder="e.g. Odisha CM launched a new telemedicine project in Sambalpur..."
+                        value={aiPrompt}
+                        onChange={(e) => setAiPrompt(e.target.value)}
+                        className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059] outline-none"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Category</label>
+                        <select 
+                          value={aiCategory}
+                          onChange={(e) => setAiCategory(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:border-[#C5A059] outline-none"
+                        >
+                          <option>Politics</option>
+                          <option>Health</option>
+                          <option>Education</option>
+                          <option>Business</option>
+                          <option>Crime</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Tone</label>
+                        <select 
+                          value={aiTone}
+                          onChange={(e) => setAiTone(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:border-[#C5A059] outline-none"
+                        >
+                          <option>Professional</option>
+                          <option>Neutral</option>
+                          <option>Engaging</option>
+                          <option>Urgent</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={handleGenerateNews}
+                      disabled={isGenerating || !aiPrompt}
+                      className="w-full bg-[#0B2B26] hover:bg-[#1a3d35] text-[#C5A059] font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                    >
+                      {isGenerating ? (
+                        <><div className="animate-spin h-5 w-5 border-2 border-[#C5A059] border-t-transparent rounded-full" /> Generating...</>
+                      ) : (
+                        <><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Generate Article & SEO</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right Side: Output Review */}
+                <div className="lg:w-2/3 border-t lg:border-t-0 lg:border-l border-gray-100 pt-8 lg:pt-0 lg:pl-10">
+                  {generatedArticle ? (
+                    <div className="space-y-6">
+                      
+                      <div className="flex justify-between items-center bg-green-50 border border-green-200 px-4 py-3 rounded-lg">
+                        <span className="text-sm font-bold text-green-800 flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                          Generation Successful
+                        </span>
+                        <div className="flex gap-2">
+                          <button className="text-xs bg-white border border-gray-300 px-3 py-1.5 rounded font-bold hover:bg-gray-50 text-gray-700">Save Draft</button>
+                          <button className="text-xs bg-[#C5A059] text-white px-3 py-1.5 rounded font-bold hover:bg-[#b08e4d] shadow">Publish Live</button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* English Output */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 mb-2 border-b pb-2">
+                            <span className="text-xl">🇬🇧</span> <h3 className="font-bold text-gray-800">English (SEO Default)</h3>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Headline</label>
+                            <div className="text-sm font-bold font-serif text-[#0B2B26] bg-gray-50 p-2 rounded border border-gray-100">{generatedArticle.title_en}</div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Summary (Meta Desc)</label>
+                            <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">{generatedArticle.summary_en}</div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Full Article</label>
+                            <div className="text-xs text-gray-800 bg-gray-50 p-3 rounded border border-gray-100 whitespace-pre-wrap leading-relaxed h-48 overflow-y-auto">{generatedArticle.content_en}</div>
+                          </div>
+                        </div>
+
+                        {/* Odia Output */}
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 mb-2 border-b pb-2">
+                            <span className="text-xl">🇮🇳</span> <h3 className="font-bold text-gray-800">Odia (Local)</h3>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Headline</label>
+                            <div className="text-sm font-bold font-serif text-[#0B2B26] bg-gray-50 p-2 rounded border border-gray-100">{generatedArticle.title_or}</div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Summary</label>
+                            <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded border border-gray-100">{generatedArticle.summary_or}</div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Full Article</label>
+                            <div className="text-xs text-gray-800 bg-gray-50 p-3 rounded border border-gray-100 whitespace-pre-wrap leading-relaxed h-48 overflow-y-auto">{generatedArticle.content_or}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-[#0B2B26]/5 rounded-lg p-4 border border-[#0B2B26]/10 mt-6 space-y-4">
+                        <div className="flex gap-6">
+                          <div className="flex-1">
+                            <label className="text-[10px] font-bold text-[#0B2B26] uppercase tracking-widest block mb-1">SEO Keywords</label>
+                            <div className="text-xs text-gray-600">{generatedArticle.seo_keywords}</div>
+                          </div>
+                          <div className="flex-1">
+                            <label className="text-[10px] font-bold text-[#0B2B26] uppercase tracking-widest block mb-1">Hashtags</label>
+                            <div className="text-xs text-gray-600">{generatedArticle.hashtags}</div>
+                          </div>
+                        </div>
+                        <div className="pt-4 border-t border-[#0B2B26]/10 flex items-start gap-4">
+                          <div className="w-32 h-20 bg-gray-200 rounded shrink-0 relative overflow-hidden group">
+                            <img src={`https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=300&q=80`} alt="Thumbnail mock" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span className="text-[10px] text-white font-bold">Unsplash Mock</span>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-[#0B2B26] uppercase tracking-widest block mb-1">Suggested Thumbnail Prompt</label>
+                            <div className="text-xs text-gray-600 italic">"{generatedArticle.thumbnail_prompt}"</div>
+                            <button className="mt-2 text-xs bg-gray-800 text-white px-3 py-1 rounded shadow-sm hover:bg-black transition-colors">Generate Real Image</button>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-center py-20 opacity-50">
+                      <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                      <h4 className="font-bold text-gray-600 mb-2">No Content Generated Yet</h4>
+                      <p className="text-sm text-gray-400 max-w-xs mx-auto">Enter a prompt on the left and click generate to create an SEO-optimized dual-language article.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
