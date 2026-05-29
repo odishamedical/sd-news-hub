@@ -1,9 +1,62 @@
 import React from "react";
 import Link from "next/link";
+import { Metadata } from 'next';
 import NewsAuthHeader from "@/components/NewsAuthHeader";
 import { getAggregateNews, getCustomNews } from "@/lib/news";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ url?: string, title?: string, source?: string, id?: string, lang?: string }> }): Promise<Metadata> {
+  const resolvedParams = await searchParams;
+  const lang = resolvedParams.lang === 'or' ? 'or' : 'en';
+  let title = resolvedParams.title || "SD News Hub";
+  let description = "Read the latest news updates and local stories on SD News Hub.";
+  let imageUrl = "https://sd-news-hub.vercel.app/news_industry.png"; 
+
+  if (resolvedParams.id) {
+    try {
+      // Use Firebase REST API for Edge/Server compatibility without Admin SDK issues
+      const res = await fetch(`https://firestore.googleapis.com/v1/projects/sd-auth-center/databases/(default)/documents/news_articles/${resolvedParams.id}`, { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.fields) {
+          title = lang === 'or' 
+            ? (data.fields.titleOdia?.stringValue || data.fields.title_or?.stringValue || data.fields.title?.stringValue || title)
+            : (data.fields.title_en?.stringValue || data.fields.title?.stringValue || title);
+            
+          const rawContent = lang === 'or'
+            ? (data.fields.contentOdia?.stringValue || data.fields.content_or?.stringValue || data.fields.content?.stringValue || "")
+            : (data.fields.content_en?.stringValue || data.fields.content?.stringValue || "");
+            
+          if (rawContent) {
+             description = rawContent.substring(0, 150).replace(/\n/g, ' ') + "...";
+          }
+          
+          imageUrl = data.fields.thumbnailBase64?.stringValue || data.fields.image?.stringValue || imageUrl;
+        }
+      }
+    } catch (e) {
+      console.error("Error generating metadata for article:", e);
+    }
+  }
+
+  return {
+    title: `${title} | SD News Hub`,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: [{ url: imageUrl }],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imageUrl],
+    }
+  };
+}
 
 export default async function ArticlePage({ searchParams }: { searchParams: Promise<{ url?: string, title?: string, source?: string, id?: string, lang?: string }> }) {
   const resolvedParams = await searchParams;
