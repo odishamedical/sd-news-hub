@@ -55,6 +55,23 @@ export default function AdminDashboard() {
 
   // Tab Switcher & Search States
   const [activeTab, setActiveTab] = useState<"dashboard" | "articles" | "reporters">("dashboard");
+
+  // Sync tab with URL Hash
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const hash = window.location.hash.replace("#", "");
+      if (hash && ["dashboard", "articles", "reporters"].includes(hash)) {
+        setActiveTab(hash as any);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", "#" + activeTab);
+    }
+  }, [activeTab]);
+
   const [selectedReporter, setSelectedReporter] = useState<Reporter | null>(null);
   const [isEditingReporter, setIsEditingReporter] = useState(false);
   const [editReporterName, setEditReporterName] = useState("");
